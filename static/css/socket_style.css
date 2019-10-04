@@ -1,0 +1,55 @@
+body
+{
+	background: silver;
+
+}
+div
+{
+	font-size: 20px;
+}
+
+
+.sockets_buttons
+{
+	background-color: grey;
+	width: 100px;
+	border-radius: 4px;
+	box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+.room_names
+{
+	font: 20px Time New Roman;
+	color: darkgreen;
+
+}
+.chose_box
+{
+	background-color: gray;
+	width: 40px;
+	height: 70px;
+	font-size: 20px;
+
+}
+.my-btn
+
+{
+	
+	width: 70px;
+	height: 30px;
+	background-color: ;
+
+}
+.my-save-btn
+{
+	width: 70px;
+	height: 30px;
+	font-size: 15px;
+	/*font-size-adjust: 30px;*/
+}
+.seted_info
+{
+	font: 20px Time New Roman; 
+	color: black;	
+	
+}
