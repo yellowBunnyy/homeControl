@@ -102,14 +102,17 @@ class HandlerCsv(HandlerFile):
 	
 	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
 	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']
+	TEMP_DATA = self.load_from_json(path=self.STATIC_PATH, key='temps')
+	
 
-	def save_temp_to_csv_handler(self, current_time):	
+	def save_temp_to_csv_handler(self, full_time):
+		date, current_time = full_time.split(',')
 		for trigger_time in self.TRIGGER_HOURS:
-			date = self.convert_to_str(datetime.datetime.now())
+			# date = self.convert_to_str(datetime.datetime.now())
 			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} | date: {date}' )			
 			if trigger_time == current_time:			
-				data = self.load_from_json(path=self.STATIC_PATH, key='temps')
-				self.save_to_file_csv(file_path=self.CSV_file, data=data, hour=trigger_time, date=date)
+				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
+				self.save_to_file_csv(file_path=self.CSV_file, data=self.TEMP_DATA, hour=trigger_time, date=date)
 				print(f'{trigger_time}ZAPISANO DO CSV')
 
 
@@ -210,6 +213,76 @@ class HandlerCsv(HandlerFile):
 			self.pandas_save_to_file(file_path=file_path, data=data, obj_date=ran_date)
 ############################# endBlock #############################
 
+class HandlerSQL(HandlerCsv):
+	
+	def __init__(self, db_file):
+		# create connection with db and create cursor
+		self.db_file = db_file
+		self.conn = sqlite3.connect(db_file)
+		self.c = self.conn.cursor()
+		print('have connetction')
+
+	def close_db(self):
+		#close db
+		self.conn.close()
+
+	def create_table(self, table_name, columns):
+		# create new table
+		# print(','.join(name_col for name_col in columns))
+		self.c.execute('''CREATE TABLE {}
+				   ({})'''.format(table_name, ','.join(name_col for name_col in columns)))
+		print('table was created --> {}'.format(table_name))
+
+	def save_data_to_db(self, data, table_name, *comumns):
+		# this condition create table in db if dose not exist
+		if self.recognize_if_table_in_db_exist(table_name=table_name):
+			self.create_table(table_name=table_name, columns=comumns)
+
+		if type(data)!= tuple:
+			raise MyErrors('wrong data format!! allowed tuple!!')
+		else:
+			self.c.execute('''INSERT INTO {} VALUES ({})
+				 '''.format(table_name,','.join('?'*len(data))),data)
+			print('data was saved --> {}'.format(data))
+			self.conn.commit()
+			print('was commited')
+			self.close_db()
+			print('db was closed')
+
+	def compare_with_current_temp_and_save(self, full_time):
+		data = tuple(full_time.split(','))
+		temps_values_tup = tuple(value for room, value in self.TEMP_DATA.items())
+		all_data = data + temps_values_tup
+		print(all_data,'||||||')
+		if current_time in TRIGGER_HOURS:
+			self.save_data_to_db()
+			pass
+
+	def read_from_db(self, table_name):
+		for row in self.c.execute('''SELECT * FROM {}'''.format(table_name)):
+			print(row)
+
+	def create_random_input_data(self, no_col):
+		date, hour = datetime.datetime.now().strftime('%d-%m-%Y,%H:%M').split(',')
+		if no_col > 2:
+			t = tuple(random.choices(range(-20, 35),k = no_col - 2))
+			return (date, hour) + t
+		else:
+			raise MyErrors('not enough columns no_col > 2')
+
+	def recognize_if_table_in_db_exist(self, table_name):
+		'''Recognizon if data base is created. If is return false
+			otherwise return true'''
+		# script search table who is input arg this metchod
+		self.c.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
+		if self.c.fetchone():
+			print('db exist --> flag :false')
+			return False
+		else:
+			print('db does not exist --> flag: true')
+			return True
+
+	
 
 if __name__ == '__main__':
 	obj = HandletFile()
