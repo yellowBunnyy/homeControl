@@ -13,6 +13,26 @@ class HandlerFile():
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
 	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')
 
+	@classmethod
+	def load_from_json_cls_method(cls, path, key=None):
+		'''function return dict obj'''
+		with open(path, mode='r') as file:
+			json_content = file.read()
+			if not json_content:
+				raise MyExceptions('Brak danych w json_content!!!')
+			else:
+				content = json.loads(json_content)           
+		if key:
+			try:
+				# print('data was load with key {}'.format(content[key]))
+				return content[key]
+			except KeyError:
+				raise MyExceptions('Brak klucza w load from json')
+		else:
+			# print('data was load without key {}'.format(content))
+			return content
+		
+
 	def show_path(self):
 		print(self.STATIC_PATH)
 
@@ -102,7 +122,7 @@ class HandlerCsv(HandlerFile):
 	
 	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
 	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']
-	TEMP_DATA = self.load_from_json(path=self.STATIC_PATH, key='temps')
+	TEMP_DATA = HandlerFile().load_from_json_cls_method(path=os.path.join(os.getcwd(),'logic_script','data.json'),key='temps')
 	
 
 	def save_temp_to_csv_handler(self, full_time):
