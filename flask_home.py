@@ -134,7 +134,8 @@ def recive_current_time():
 		# current_time = request.data.decode('ascii')        
 		virtual_relay_obj.switch_handler(current_time=current_time)
 		save_to_file.HandlerCsv().save_temp_to_csv_handler(
-			current_time=current_time)
+			full_time=full_time)
+		# save_to_file.HandlerSQL(db_file=r'/logic_script/temp_readings.db').
 		return 'ok'
 	else:
 		# send date to site 
