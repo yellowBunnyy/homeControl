@@ -51,8 +51,16 @@ def heat_config():
 def temp_background():
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
-	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(DATA_PATH, TEMP_KEY)}
-	sensor_errors = {f'{SENSOR_ERRORS}': save_to_file_obj.load_from_json(DATA_PATH, SENSOR_ERRORS)}
+	# temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(DATA_PATH, TEMP_KEY)}
+	# sensor_errors = {f'{SENSOR_ERRORS}': save_to_file_obj.load_from_json(DATA_PATH, SENSOR_ERRORS)}
+	
+	### refactor Start###
+	main_loaded_file = save_to_file_obj.load_from_json(path=DATA_PATH)
+	
+	temp_in_json = {f'{TEMP_KEY}': main_loaded_file[TEMP_KEY]}
+	sensor_errors = {f'{SENSOR_ERRORS}': main_loaded_file[SENSOR_ERRORS]}
+	### refactor End#### 
+
 	if temp_in_json:
 		print('DATA WAS DETECTED TEMP')        
 		temp_in_json.update(sensor_errors)
