@@ -11,27 +11,7 @@ class HandlerFile():
 
 	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
-	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')
-
-	@classmethod
-	def load_from_json_cls_method(cls, path, key=None):
-		'''function return dict obj'''
-		with open(path, mode='r') as file:
-			json_content = file.read()
-			if not json_content:
-				raise MyExceptions('Brak danych w json_content!!!')
-			else:
-				content = json.loads(json_content)           
-		if key:
-			try:
-				# print('data was load with key {}'.format(content[key]))
-				return content[key]
-			except KeyError:
-				raise MyExceptions('Brak klucza w load from json')
-		else:
-			# print('data was load without key {}'.format(content))
-			return content
-		
+	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
 
 	def show_path(self):
 		print(self.STATIC_PATH)
@@ -121,18 +101,17 @@ class HandlerFile():
 class HandlerCsv(HandlerFile):
 	
 	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
-	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']
-	TEMP_DATA = HandlerFile().load_from_json_cls_method(path=os.path.join(os.getcwd(),'logic_script','data.json'),key='temps')
-	
+	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']	
 
 	def save_temp_to_csv_handler(self, full_time):
 		date, current_time = full_time.split(',')
+		temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
 		for trigger_time in self.TRIGGER_HOURS:
 			# date = self.convert_to_str(datetime.datetime.now())
 			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} | date: {date}' )			
 			if trigger_time == current_time:			
 				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
-				self.save_to_file_csv(file_path=self.CSV_file, data=self.TEMP_DATA, hour=trigger_time, date=date)
+				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
 				print(f'{trigger_time}ZAPISANO DO CSV')
 
 
