@@ -13,9 +13,11 @@ virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
 DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
+ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
+		errors_path = ERRORS_PATH,
 		file_obj=save_to_file_obj)
 
 
@@ -51,7 +53,7 @@ def heat_config():
 def temp_background():
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
-	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(DATA_PATH, TEMP_KEY)}
+	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
 	# connect_sensor_error_handler()	
 	### refactor Start###
 	# main_loaded_file = save_to_file_obj.load_from_json(path=DATA_PATH)
