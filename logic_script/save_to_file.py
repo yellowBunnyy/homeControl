@@ -12,16 +12,16 @@ class HandlerFile():
 	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
 	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')
-	STATIC_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_path.json')
+	STATIC_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens.json')
 
-	def create_container(self, path):
+	def create_container(self, path, content=None):
 		file_name = path.split('/')[-1]
 		# print(file_name)
 		if self.file_existance(path, file_name):
 			return 'container exist!!'
 		else:
 			with open(path, 'w') as file:
-				file.write(json.dumps({}))
+				file.write(json.dumps(content if content else {}))
 			return 'container was created!!'
 
 	def file_existance(self, path, file_name='data.json'):
