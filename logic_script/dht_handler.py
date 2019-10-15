@@ -1,5 +1,5 @@
 
-import time, sys, Adafruit_DHT as dht
+import time, sys, os, Adafruit_DHT as dht
 from logic_script import save_to_file, virtual_relay
 from time import sleep
 ##################fast get to paths######################### 
@@ -121,14 +121,14 @@ class DHT_Handler(Container):
 		def remove_token_error(sensor_name:str):
 			'''This method remove all tokens from sensor when reads is OK'''			
 			# this variable represen how much we have tokens in sensor
-			self.file_obj.update_file(path=self.sensors_path, key=self.sensor_errors_header, key2=sensor_name, content=0)
+			self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content=0)
 			print(f'all tokens was remove from {sensor_name}')
 
 		def add_token_error(sensor_name:str, sensor_token_int:int):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
 			# this variable represen how much we have tokens in sensor
 			sensor_token_int += 1
-			self.file_obj.update_file(path=self.sensors_path, key=self.sensor_errors_header, key2=sensor_name, content=sensor_token_int)
+			self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content=sensor_token_int)
 			print(f'Token was added to {sensor_name} token info {sensor_token_int}!!')				
 			if sensor_token_int >=10:
 				print(f'błąd w {sensor_name}!!!!!!!')
@@ -147,10 +147,6 @@ class DHT_Handler(Container):
 			remove_token_error(sensor_name=sensor_name)
 			# print('from sensor', data)			
 			return data
-	def check_if_file_on_folder(self, path:str, folder:str):
-		if os.path.split(path) in os.listdir(os.path.join(os.getcwd(),folder)):
-			pass
-
 	
 
 	def update(self) -> dict:
@@ -158,14 +154,9 @@ class DHT_Handler(Container):
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''	
-		# main file with json data		
-		main_data_file = self.file_obj.load_from_json(self.sensors_path)		
-		# ustaw dla wszystkich nazw sensorow po zero zetonow | set for all sensor names zero tokens
-		f = lambda data: {name: 0 for name in data}
-		# here we trow new dict object to main json file with data
-		if not self.sensor_errors_header in main_data_file:
-			self.file_obj.update_file(path=self.sensors_path, key=self.sensor_errors_header, content=f(main_data_file))
+			in main data file saved in .json '''			
+		self.file_obj.create_container(path=self.errors_path, 
+			content={name: 0 for name in self.names_container_default})			
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		return container
 
