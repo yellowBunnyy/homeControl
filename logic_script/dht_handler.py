@@ -121,14 +121,14 @@ class DHT_Handler(Container):
 		def remove_token_error(sensor_name:str):
 			'''This method remove all tokens from sensor when reads is OK'''			
 			# this variable represen how much we have tokens in sensor
-			self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content=0)
+			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=0)
 			print(f'all tokens was remove from {sensor_name}')
 
 		def add_token_error(sensor_name:str, sensor_token_int:int):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
 			# this variable represen how much we have tokens in sensor
 			sensor_token_int += 1
-			self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content=sensor_token_int)
+			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=sensor_token_int)
 			print(f'Token was added to {sensor_name} token info {sensor_token_int}!!')				
 			if sensor_token_int >=10:
 				print(f'błąd w {sensor_name}!!!!!!!')
