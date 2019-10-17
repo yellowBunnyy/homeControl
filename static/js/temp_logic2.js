@@ -39,7 +39,7 @@ function read_data() {
 		clean_error_status(sensor_errors=sensor_errors);
 	};
 	my_read.send();	
-	setTimeout(read_data, 60000); // pierwszy arg to wywoływana funkcja, zas drugi to czas odswierzania podanu w ms
+	setTimeout(read_data, 67000); // pierwszy arg to wywoływana funkcja, zas drugi to czas odswierzania podanu w ms
 }
 
 
