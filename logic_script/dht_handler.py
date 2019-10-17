@@ -1,10 +1,11 @@
 
-import time, sys, Adafruit_DHT as dht
+import time, sys, os, Adafruit_DHT as dht
 from logic_script import save_to_file, virtual_relay
 from time import sleep
 ##################fast get to paths######################### 
 p1_data = save_to_file.HandlerFile().STATIC_PATH
 p2_sensors = save_to_file.HandlerFile().STATIC_SENSOR_PATH
+p3_errors_path = save_to_file.HandlerFile().STATIC_ERRORS_PATH
 obj_save_file = save_to_file.HandlerFile()
 ############################################################
 class MyExceptions(Exception):
@@ -13,10 +14,11 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, data_path, sensors_path, file_obj):
+	def __init__(self, data_path, sensors_path, errors_path, file_obj):
 		
 		self.data_path = data_path
 		self.sensors_path = sensors_path
+		self.errors_path = errors_path
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
 		self.file_obj.create_container(self.sensors_path)	
@@ -45,22 +47,22 @@ class DHT_Handler(Container):
 	# errors = {'0': 'No sensor!! Check connection...', '1': 'Wrong read!!'}
 	sensor_errors_header = 'sensor_errors'
 
-	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, file_obj=obj_save_file):
-		super().__init__(data_path, sensors_path, file_obj)	
+	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
+		super().__init__(data_path, sensors_path, errors_path, file_obj)	
 
 
 	def dict_with_keys_as_room_names_and_dict_as_value(self):
 		# this method return dict include all room_names as key and dict as value where
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
-		data = self.file_obj.load_from_json(self.sensors_path)
+		data_from_sensor_file = self.file_obj.load_from_json(self.sensors_path)
 		data_from_file = self.file_obj.load_from_json(self.data_path, 'temps')
 		# print(data)
 		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, data_from_file=data_from_file) 
-		for sensor_name, pin in data.items()}
+		for sensor_name, pin in data_from_sensor_file.items()}
 		return dict_data_with_all_rooms_temp_and_humidity
 
-	def recognicion_device(self, pin=None, name=None, test_tuple1=None, test_tuple2=None):
+	def recognicion_device(self, pin:int=None, name:str=None, test_tuple1:tuple=None, test_tuple2:tuple=None):
 		'''This method may return three value:
 			- data in tuple,
 			- 10 in int obj
@@ -112,21 +114,21 @@ class DHT_Handler(Container):
 			return 10
 
 	
-	def to_flask(self, pin, sensor_name, data_from_file):
+	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict):
 		'''method who create correct data form in allow range e.g 
 		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
 
-		def remove_token_error(sensor_name):
+		def remove_token_error(sensor_name:str):
 			'''This method remove all tokens from sensor when reads is OK'''			
 			# this variable represen how much we have tokens in sensor
-			self.file_obj.update_file(path=self.data_path, key=self.sensor_errors_header, key2=sensor_name, content=0)
+			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=0)
 			print(f'all tokens was remove from {sensor_name}')
 
-		def add_token_error(sensor_name, sensor_token_int):
+		def add_token_error(sensor_name:str, sensor_token_int:int):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
 			# this variable represen how much we have tokens in sensor
 			sensor_token_int += 1
-			self.file_obj.update_file(path=self.data_path, key=self.sensor_errors_header, key2=sensor_name, content=sensor_token_int)
+			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=sensor_token_int)
 			print(f'Token was added to {sensor_name} token info {sensor_token_int}!!')				
 			if sensor_token_int >=10:
 				print(f'błąd w {sensor_name}!!!!!!!')
@@ -135,32 +137,26 @@ class DHT_Handler(Container):
 		readed_data = self.recognicion_device(pin=pin, name=sensor_name)
 
 		if not readed_data or readed_data == 10:
-			sensor_token_int = self.file_obj.load_from_json(path=self.data_path, key=self.sensor_errors_header)[sensor_name]
+			sensor_token_int = self.file_obj.load_from_json(path=self.errors_path)[sensor_name]
 			add_token_error(sensor_name=sensor_name, sensor_token_int=sensor_token_int)
 			print('from file!!!', data_from_file[sensor_name])
 			return data_from_file[sensor_name]				
 		else:									
 			data = {name: round(value,1) if value != None else value for name, value in zip(['temp','humidity'], readed_data[::-1])}				
-			self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name,content=data)
+			self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name, content=data)
 			remove_token_error(sensor_name=sensor_name)
 			# print('from sensor', data)			
 			return data
+	
 
-	def update(self):
+	def update(self) -> dict:
 		'''this method return dict include all room_names as key and dict as value where
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''	
-		# main file with json data
-		main_data_file = self.file_obj.load_from_json(self.data_path)
-		# all name sensors
-		all_sensor_names = self.file_obj.load_from_json(self.sensors_path)
-		# ustaw dla wszystkich nazw sensorow po zero zetonow | set for all sensor names zero tokens
-		f = lambda data: {name: 0 for name in data}
-		# here we trow new dict object to main json file with data
-		if not self.sensor_errors_header in main_data_file:
-			self.file_obj.update_file(path=self.data_path, key=self.sensor_errors_header, content=f(all_sensor_names))
+			in main data file saved in .json '''			
+		self.file_obj.create_container(path=self.errors_path, 
+			content={name: 0 for name in self.names_container_default})			
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		return container
 

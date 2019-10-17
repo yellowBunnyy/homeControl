@@ -1,5 +1,5 @@
 import unittest, random, Adafruit_DHT as dht
-from logic_script import convert_time, dht_handler
+from logic_script import dht_handler
 
 
 
@@ -7,6 +7,9 @@ from logic_script import convert_time, dht_handler
 class Basic_tests(unittest.TestCase):
    # obj_convert_test = convert_time.TimeConvertet()
 	obj_dht_handler = dht_handler.DHT_Handler()
+	SENSORS_PATH = dht_handler.p3_errors_path	
+	folder = 'logic_script'
+
 	# time convert tests
 	# def test_convert_test_normal(self):
 	#     print('normal')
@@ -94,39 +97,54 @@ class Basic_tests(unittest.TestCase):
 	# 		self.assertEqual(answer, f, f'should be {answer} is {f}')
 
 
-	def test_random_test(self):
-		# mixed random test with dht11 , dht22, error code 10
-		# single sample creator		
-		create_single_sample = lambda: {name: data for name, data in zip(['tup1', 'tup2'], 
-			[random.choices(population=list(range(-100,200)) if random.randint(0,5)
-				else (None, None), k=2), 
-			random.choices(population=list(range(-100,200)) if random.randint(0,5)
-				else (None, None), k=2)])}
-		# create list with samples 
-		samples = [create_single_sample() for _ in range(10000)]
+	# def test_random_test(self):
+	# 	# mixed random test with dht11 , dht22, error code 10
+	# 	# single sample creator		
+	# 	create_single_sample = lambda: {name: data for name, data in zip(['tup1', 'tup2'], 
+	# 		[random.choices(population=list(range(-100,200)) if random.randint(0,5)
+	# 			else (None, None), k=2), 
+	# 		random.choices(population=list(range(-100,200)) if random.randint(0,5)
+	# 			else (None, None), k=2)])}
+	# 	# create list with samples 
+	# 	samples = [create_single_sample() for _ in range(10000)]
 
-		def answers(data):
-			# we get here dict object with two key words tup1, tup2
-			tup1, tup2 = data['tup1'], data['tup2']
+	# 	def answers(data):
+	# 		# we get here dict object with two key words tup1, tup2
+	# 		tup1, tup2 = data['tup1'], data['tup2']
 
-			if tup1[0] == None:
-				return 10			
-			elif 20 < tup1[0] <= 100 and -30 < tup1[1] <= 60:
-				return tup1
-			elif tup2[0] == None:
-				return 10			
-			elif 20 < tup2[0] <= 100 and -30 < tup2[1] <= 60:
-				return tup2
-			else:
-				return 10			
+	# 		if tup1[0] == None:
+	# 			return 10			
+	# 		elif 20 < tup1[0] <= 100 and -30 < tup1[1] <= 60:
+	# 			return tup1
+	# 		elif tup2[0] == None:
+	# 			return 10			
+	# 		elif 20 < tup2[0] <= 100 and -30 < tup2[1] <= 60:
+	# 			return tup2
+	# 		else:
+	# 			return 10			
 
-		for i, sample in enumerate(samples):
-			print(f'{i} ----> {sample}')
-			answer = answers(sample)
-			f = self.obj_dht_handler.recognicion_device(test_tuple1=sample['tup1'], 
-				test_tuple2=sample['tup2'])
-			print('\n')
-			self.assertEqual(answer, f, f'should be {answer} is --> {f}')
+	# 	for i, sample in enumerate(samples):
+	# 		print(f'{i} ----> {sample}')
+	# 		answer = answers(sample)
+	# 		f = self.obj_dht_handler.recognicion_device(test_tuple1=sample['tup1'], 
+	# 			test_tuple2=sample['tup2'])
+	# 		print('\n')
+	# 		self.assertEqual(answer, f, f'should be {answer} is --> {f}')
+
+	# def test_file_in_folder(self):		
+	# 	self.assertTrue(self.obj_dht_handler.check_if_file_in_folder(
+	# 		path=self.SENSORS_PATH, 
+	# 		folder=self.folder))
+	# def test_file_not_in_folder(self):
+	# 	self.assertFalse(self.obj_dht_handler.check_if_file_on_folder(
+	# 		path=self.SENSORS_PATH, 
+	# 		folder=self.folder))
+	def test_haldler_errors_file(self):
+		self.obj_dht_handler.update()
+
+
+
+		
 
 
 

@@ -13,9 +13,11 @@ virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
 DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
+ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
+		errors_path = ERRORS_PATH,
 		file_obj=save_to_file_obj)
 
 
@@ -51,32 +53,28 @@ def heat_config():
 def temp_background():
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
-	# temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(DATA_PATH, TEMP_KEY)}
-	# sensor_errors = {f'{SENSOR_ERRORS}': save_to_file_obj.load_from_json(DATA_PATH, SENSOR_ERRORS)}
-	
+	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
+	# connect_sensor_error_handler()	
 	### refactor Start###
-	main_loaded_file = save_to_file_obj.load_from_json(path=DATA_PATH)
+	# main_loaded_file = save_to_file_obj.load_from_json(path=DATA_PATH)
 	
-	temp_in_json = {f'{TEMP_KEY}': main_loaded_file[TEMP_KEY]}
-	sensor_errors = {f'{SENSOR_ERRORS}': main_loaded_file[SENSOR_ERRORS]}
+	# temp_in_json = {f'{TEMP_KEY}': main_loaded_file[TEMP_KEY]}
+	# sensor_errors = {f'{SENSOR_ERRORS}': main_loaded_file[SENSOR_ERRORS]}
 	### refactor End#### 
 
 	if temp_in_json:
 		print('DATA WAS DETECTED TEMP')        
-		temp_in_json.update(sensor_errors)
-		# print(temp_in_json,'w nowej funkcji') 
+		## temp_in_json.update(sensor_errors)		
 		json_data = json.dumps(temp_in_json)
 		return json_data
 	print('DATA NOT DETECTED temp')
 	# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}
 	# we use here sensor list path with sensor name and pin e.g {...'salon':1...}
-	container = {f'{TEMP_KEY}':dht_handler_obj.temp_containter_list()}
+	container = {f'{TEMP_KEY}':dht_handler_obj.dict_with_keys_as_room_names_and_dict_as_value()}
 	# extend with sensor_errors
-	container.update(sensor_errors)
-	# print('{} tu mamy container dla temp'.format(container))
+	## container.update(sensor_errors)
 	json_data = json.dumps(container)
 	return json_data
-
 
 
 @app.route('/lighting', methods = ['GET','POST'])

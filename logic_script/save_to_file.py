@@ -11,19 +11,17 @@ class HandlerFile():
 
 	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
-	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
+	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')
+	STATIC_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens.json')	
 
-	def show_path(self):
-		print(self.STATIC_PATH)
-
-	def create_container(self, path):
+	def create_container(self, path, content=None):
 		file_name = path.split('/')[-1]
 		# print(file_name)
 		if self.file_existance(path, file_name):
 			return 'container exist!!'
 		else:
 			with open(path, 'w') as file:
-				file.write(json.dumps({}))
+				file.write(json.dumps(content if content else {}))
 			return 'container was created!!'
 
 	def file_existance(self, path, file_name='data.json'):
@@ -45,7 +43,7 @@ class HandlerFile():
 		with open(path, mode='r') as file:
 			json_content = file.read()
 			if not json_content:
-				raise MyExceptions('Brak danych w json_content!!!')
+				raise MyExceptions(f'Brak danych w json_content!!! PATH --> {path}')
 			else:
 				content = json.loads(json_content)           
 		if key:
@@ -53,7 +51,7 @@ class HandlerFile():
 				# print('data was load with key {}'.format(content[key]))
 				return content[key]
 			except KeyError:
-				raise MyExceptions('Brak klucza w load from json')
+				raise MyExceptions(f'Brak klucza w load from json PATH --> {path}')
 		else:
 			# print('data was load without key {}'.format(content))
 			return content
@@ -102,6 +100,7 @@ class HandlerCsv(HandlerFile):
 	
 	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
 	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']	
+
 
 	def save_temp_to_csv_handler(self, full_time):
 		date, current_time = full_time.split(',')
@@ -286,8 +285,7 @@ class HandlerSQL(HandlerCsv):
 if __name__ == '__main__':
 	obj = HandletFile()
 	path = obj.STATIC_PATH
-   # print(obj.create_container(obj.STATIC_PATH))
-	obj.show_path()
+   # print(obj.create_container(obj.STATIC_PATH))	
 	sample = {'ON':'20:30','OFF':'11:23'}
 	second_sample = {'temp1':23, 'temp2':21, 'temp3':90}
 	third_sample = {'sockets': {'ON': '20:30', 'OFF': '11:23'}, 'temps': {'temp2': 21, 'temp1': 23, 'temp3': 90}}
