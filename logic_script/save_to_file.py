@@ -43,7 +43,7 @@ class HandlerFile():
 		with open(path, mode='r') as file:
 			json_content = file.read()
 			if not json_content:
-				raise MyExceptions('Brak danych w json_content!!!')
+				raise MyExceptions(f'Brak danych w json_content!!! PATH --> {path}')
 			else:
 				content = json.loads(json_content)           
 		if key:
@@ -51,7 +51,7 @@ class HandlerFile():
 				# print('data was load with key {}'.format(content[key]))
 				return content[key]
 			except KeyError:
-				raise MyExceptions('Brak klucza w load from json')
+				raise MyExceptions(f'Brak klucza w load from json PATH --> {path}')
 		else:
 			# print('data was load without key {}'.format(content))
 			return content
