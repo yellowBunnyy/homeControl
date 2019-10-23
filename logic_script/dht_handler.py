@@ -51,7 +51,7 @@ class DHT_Handler(Container):
 		super().__init__(data_path, sensors_path, errors_path, file_obj)	
 
 
-	def dict_with_keys_as_room_names_and_dict_as_value(self):
+	def dict_with_keys_as_room_names_and_dict_as_value(self) -> dict:
 		# this method return dict include all room_names as key and dict as value where
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
@@ -114,7 +114,7 @@ class DHT_Handler(Container):
 			return 10
 
 	
-	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict):
+	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict) -> dict:
 		'''method who create correct data form in allow range e.g 
 		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
 
@@ -154,7 +154,8 @@ class DHT_Handler(Container):
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''			
+			in main data file saved in .json '''
+		# create_contener method automaticly check if file exist				
 		self.file_obj.create_container(path=self.errors_path, 
 			content={name: 0 for name in self.names_container_default})			
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
