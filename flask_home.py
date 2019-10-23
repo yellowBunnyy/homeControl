@@ -14,10 +14,12 @@ DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
 ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
+DB_ERRORS_PATH = save_to_file_obj.STATIC_DB_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
 		errors_path = ERRORS_PATH,
+		db_errors_path = STATIC_DB_ERRORS_PATH
 		file_obj=save_to_file_obj)
 
 
