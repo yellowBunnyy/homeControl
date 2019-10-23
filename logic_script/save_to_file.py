@@ -287,21 +287,33 @@ class HandlerSQL(HandlerCsv):
             print('db does not exist --> flag: true')
             return True
 
-    def update_token_in_column(self,table_name:str, **kwargs):
-        '''Update value in single column in table **kwargs are a dictionary'''
-        # if value is True return value from dict else return key form dict
-        return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]
-        print(table_name, return_key_or_value_form_dict(dic_t=kwargs), return_key_or_value_form_dict(dic_t=kwargs,value=True))
-        self.c.execute('''UPDATE {} SET {} = {}'''.format(
+    def update_token_in_column(self, table_name:str, data:(dict, bool) = False, reset_tokens:list = False):
+        '''Update value in single column in table data key as room name val as token int 
+        e.g ('salon': 1) are a dictionary'''
+        # if value is True return value from dict else return key form dict        
+        if reset_tokens and data == False:
+        	for column in reset_tokens:
+        		print(table_name, column, 0)
+        		self.c.execute('''UPDATE {} SET {} = {}'''.format(
                                                         table_name,
-                                                        return_key_or_value_form_dict(dic_t=kwargs),
-                                                        return_key_or_value_form_dict(dic_t=kwargs,value=True)))
-        self.conn.commit()
+                                                        column,
+                                                        0))
+
+        else:
+        	return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]        	
+	        print(table_name, return_key_or_value_form_dict(dic_t=data), return_key_or_value_form_dict(dic_t=data,value=True))
+	        self.c.execute('''UPDATE {} SET {} = {}'''.format(
+	                                                        table_name,
+	                                                        return_key_or_value_form_dict(dic_t=data),
+	                                                        return_key_or_value_form_dict(dic_t=data, value=True)))
+	        self.conn.commit()
 
     def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
         '''fetch token as integer from data base and return that integer'''
         db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
         return db_data.fetchone()[-1]
+
+
 	
 	
 	
