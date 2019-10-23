@@ -14,14 +14,16 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, data_path, sensors_path, errors_path, file_obj):
+	def __init__(self, data_path, sensors_path, errors_path, db_errors_path, file_obj):
 		
 		self.data_path = data_path
 		self.sensors_path = sensors_path
 		self.errors_path = errors_path
+		self.db_errors_path = db_errors_path
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
-		self.file_obj.create_container(self.sensors_path)	
+		self.file_obj.create_container(self.sensors_path)
+
 
 	def load_default(self):
 		names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'warsztat': 20, 'wc': 8,
@@ -155,6 +157,15 @@ class DHT_Handler(Container):
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
 			in main data file saved in .json '''
+		###################### db ##################
+		table_name = 'errors_tokens'
+		columns = [col for room_name, pin in self.names_container_default.items()]
+		SQL_obj = save_to_file.HandlerFileSQL(db_file=self.db_errors_path)
+		if SQL_obj.recognize_if_table_in_db_exist(table_name=table_name):
+			SQL_obj.create_table(table_name=table_name, columns=columns)
+			SQL_obj.update_token_in_column(table_name=table_name,)
+
+		###################### db ##################
 		# create_contener method automaticly check if file exist				
 		self.file_obj.create_container(path=self.errors_path, 
 			content={name: 0 for name in self.names_container_default})			
