@@ -212,74 +212,97 @@ class HandlerCsv(HandlerFile):
 ############################# endBlock #############################
 
 class HandlerSQL(HandlerCsv):
-	
-	def __init__(self, db_file):
-		# create connection with db and create cursor
-		self.db_file = db_file
-		self.conn = sqlite3.connect(db_file)
-		self.c = self.conn.cursor()
-		print('have connetction')
 
-	def close_db(self):
-		#close db
-		self.conn.close()
+	def __init__(self, db_file:str=None):
+        '''Here we initial conection to database and create
+        cursor object form connect object.'''
+        # create connection with db and create cursor
+        if not db_file:
+            raise MyErrors('Please insert DataBase file path!!')
+        else:
+            self.db_file = db_file
+            self.conn = sqlite3.connect(db_file)
+            self.c = self.conn.cursor()
+            print('have connetction')
 
-	def create_table(self, table_name, columns):
-		# create new table
-		# print(','.join(name_col for name_col in columns))
-		self.c.execute('''CREATE TABLE {}
+    def close_db(self):
+        # close db
+        self.conn.close()
+
+    def create_table(self, table_name:str, columns:(tuple,list)):
+        '''Create table in data base'''
+        # create new table
+        # print(','.join(name_col for name_col in columns))
+        self.c.execute('''CREATE TABLE {}
 				   ({})'''.format(table_name, ','.join(name_col for name_col in columns)))
-		print('table was created --> {}'.format(table_name))
+        print('table was created --> {}'.format(table_name))
 
-	def save_data_to_db(self, data, table_name, *comumns):
-		# this condition create table in db if dose not exist
-		if self.recognize_if_table_in_db_exist(table_name=table_name):
-			self.create_table(table_name=table_name, columns=comumns)
+    def save_data_to_db(self, data:tuple, table_name:str, *comumns):
+        # this condition create table in db if dose not exist
+        if self.recognize_if_table_in_db_exist(table_name=table_name):
+            self.create_table(table_name=table_name, columns=comumns)
 
-		if type(data)!= tuple:
-			raise MyErrors('wrong data format!! allowed tuple!!')
-		else:
-			self.c.execute('''INSERT INTO {} VALUES ({})
-				 '''.format(table_name,','.join('?'*len(data))),data)
-			print('data was saved --> {}'.format(data))
-			self.conn.commit()
-			print('was commited')
-			self.close_db()
-			print('db was closed')
+        if type(data) != tuple:
+            raise MyErrors('wrong data format!! allowed only tuple!!')
+        else:
+            self.c.execute('''INSERT INTO {} VALUES ({})
+				 '''.format(table_name, ','.join('?' * len(data))), data)
+            print('data was saved --> {}'.format(data))
+            self.conn.commit()
+            print('was commited')
+            self.close_db()
+            print('db was closed')
 
-	def compare_with_current_temp_and_save(self, full_time):
-		data = tuple(full_time.split(','))
-		temps_values_tup = tuple(value for room, value in self.TEMP_DATA.items())
-		all_data = data + temps_values_tup
-		print(all_data,'||||||')
-		if current_time in TRIGGER_HOURS:
-			self.save_data_to_db()
-			pass
+    def compare_with_current_temp_and_save(self, full_time):
+        data = tuple(full_time.split(','))
+        temps_values_tup = tuple(value for room, value in self.TEMP_DATA.items())
+        all_data = data + temps_values_tup
+        print(all_data, '||||||')
+        if current_time in TRIGGER_HOURS:
+            self.save_data_to_db()
+            pass
 
-	def read_from_db(self, table_name):
-		for row in self.c.execute('''SELECT * FROM {}'''.format(table_name)):
-			print(row)
+    def read_from_db(self, table_name):
+        for row in self.c.execute('''SELECT * FROM {}'''.format(table_name)):
+            print(row)
 
-	def create_random_input_data(self, no_col):
-		date, hour = datetime.datetime.now().strftime('%d-%m-%Y,%H:%M').split(',')
-		if no_col > 2:
-			t = tuple(random.choices(range(-20, 35),k = no_col - 2))
-			return (date, hour) + t
-		else:
-			raise MyErrors('not enough columns no_col > 2')
+    def create_random_input_data(self, no_col):
+        date, hour = datetime.datetime.now().strftime('%d-%m-%Y,%H:%M').split(',')
+        if no_col > 2:
+            t = tuple(random.choices(range(-20, 35), k=no_col - 2))
+            return (date, hour) + t
+        else:
+            raise MyErrors('not enough columns no_col > 2')
 
-	def recognize_if_table_in_db_exist(self, table_name):
-		'''Recognizon if data base is created. If is return false
-			otherwise return true'''
-		# script search table who is input arg this metchod
-		self.c.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
-		if self.c.fetchone():
-			print('db exist --> flag :false')
-			return False
-		else:
-			print('db does not exist --> flag: true')
-			return True
+    def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
+        '''Recognizon if table is in data base. If is return false
+            otherwise return true'''
+        # script search table which is input --> (table_name) arg this metchod
+        self.c.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
+        if self.c.fetchone():
+            print('db exist --> flag :false')
+            return False
+        else:
+            print('db does not exist --> flag: true')
+            return True
 
+    def update_token_in_column(self,table_name:str, **kwargs):
+        '''Update value in single column in table **kwargs are a dictionary'''
+        # if value is True return value from dict else return key form dict
+        return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]
+        print(table_name, return_key_or_value_form_dict(dic_t=kwargs), return_key_or_value_form_dict(dic_t=kwargs,value=True))
+        self.c.execute('''UPDATE {} SET {} = {}'''.format(
+                                                        table_name,
+                                                        return_key_or_value_form_dict(dic_t=kwargs),
+                                                        return_key_or_value_form_dict(dic_t=kwargs,value=True)))
+        self.conn.commit()
+
+    def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
+        '''fetch token as integer from data base and return that integer'''
+        db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
+        return db_data.fetchone()[-1]
+	
+	
 	
 
 if __name__ == '__main__':
