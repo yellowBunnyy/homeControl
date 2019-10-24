@@ -18,8 +18,7 @@ DB_ERRORS_PATH = save_to_file_obj.STATIC_DB_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
-		errors_path = ERRORS_PATH,
-		db_errors_path = STATIC_DB_ERRORS_PATH
+		errors_path = ERRORS_PATH,		
 		file_obj=save_to_file_obj)
 
 
