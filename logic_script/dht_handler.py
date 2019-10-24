@@ -14,12 +14,11 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, data_path, sensors_path, errors_path, db_errors_path, file_obj):
+	def __init__(self, data_path, sensors_path, errors_path, file_obj):
 		
 		self.data_path = data_path
 		self.sensors_path = sensors_path
-		self.errors_path = errors_path
-		self.db_errors_path = db_errors_path
+		self.errors_path = errors_path		
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
 		self.file_obj.create_container(self.sensors_path)
@@ -52,7 +51,7 @@ class DHT_Handler(Container):
 
 	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
 		super().__init__(data_path, sensors_path, errors_path, file_obj)
-		self.SQL_obj = save_to_file.HandlerFileSQL(db_file=self.db_errors_path)
+		self.SQL_obj = save_to_file.HandlerSQL()
 		self.table_name = 'errors_tokens'	
 
 
@@ -139,8 +138,8 @@ class DHT_Handler(Container):
 			# this variable represen how much we have tokens in sensor
 			sensor_token_int += 1
 			self.file_obj.update_file(path=self.errors_path,
-			 							key=sensor_name, 
-			 							content=sensor_token_int)
+										key=sensor_name, 
+										content=sensor_token_int)
 			###################### db ##################
 			int_from_db = self.SQL_obj.fetch_token_int_from_column(
 										table_name=self.table_name, 
@@ -176,11 +175,11 @@ class DHT_Handler(Container):
 			in main data file saved in .json '''
 		###################### db ##################
 		
-		columns = [col for room_name, pin in self.names_container_default.items()]		
+		columns = [col_room_name for col_room_name, pin in self.names_container_default.items()]		
 		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
 			self.SQL_obj.create_table(table_name=self.table_name, columns=columns)
 		# here we set all tokens on 0.
-			self.SQL_obj.update_token_in_column(table_name=self.table_name, data, reset_tokens=columns)
+			self.SQL_obj.update_token_in_column(table_name=self.table_name, data=False, reset_tokens=columns)
 		###################### db ##################
 		
 		# create_contener method automaticly check if file exist				
