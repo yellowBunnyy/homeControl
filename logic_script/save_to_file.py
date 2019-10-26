@@ -108,7 +108,7 @@ class HandlerCsv(HandlerFile):
 		temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
 		for trigger_time in self.TRIGGER_HOURS:
 			# date = self.convert_to_str(datetime.datetime.now())
-			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} | date: {date}' )			
+			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"}date: {date}' )			
 			if trigger_time == current_time:			
 				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
 				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
@@ -223,7 +223,7 @@ class HandlerSQL(HandlerCsv):
 			raise MyErrors('Please insert DataBase file path!!')
 		else:
 			self.db_file = db_file
-			self.conn = sqlite3.connect(db_file)
+			self.conn = sqlite3.connect(db_file, check_same_thread=False)
 			self.c = self.conn.cursor()
 			print('have connetction')
 
@@ -259,7 +259,7 @@ class HandlerSQL(HandlerCsv):
 		data = tuple(full_time.split(','))
 		temps_values_tup = tuple(value for room, value in self.TEMP_DATA.items())
 		all_data = data + temps_values_tup
-		print(all_data, '||||||')
+		print(all_data, )
 		if current_time in TRIGGER_HOURS:
 			self.save_data_to_db()
 			pass
@@ -300,18 +300,20 @@ class HandlerSQL(HandlerCsv):
 														column,
 														0))
 		#set token in column
-		else:
+		else:			
 			return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]        	
-			print(table_name, return_key_or_value_form_dict(dic_t=input_data), return_key_or_value_form_dict(dic_t=data,value=True))
+			print(table_name, return_key_or_value_form_dict(dic_t=input_data), 
+				return_key_or_value_form_dict(dic_t=input_data,value=True),'in update_token_in_column')
 			self.c.execute('''UPDATE {} SET {} = {}'''.format(
 															table_name,
 															return_key_or_value_form_dict(dic_t=input_data),
-															return_key_or_value_form_dict(dic_t=input_data, value=True)) + 1) # here we update old value add 1.
+															return_key_or_value_form_dict(dic_t=input_data, value=True)))
 			self.conn.commit()
 
 	def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
 		'''fetch token as integer from data base and return that integer'''
 		db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
+		print(db_data.fetchone(), table_name, column_name)
 		return db_data.fetchone()[-1]
 
 
