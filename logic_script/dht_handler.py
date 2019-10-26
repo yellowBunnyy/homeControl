@@ -144,6 +144,7 @@ class DHT_Handler(Container):
 			int_from_db = self.SQL_obj.fetch_token_int_from_column(
 										table_name=self.table_name, 
 										column_name=sensor_name)
+			print(int_from_db, type(int_from_db), 10*'|')
 			self.SQL_obj.update_token_in_column(table_name=self.table_name,
 												input_data={sensor_name:int_from_db})
 			###################### db ##################
@@ -179,7 +180,7 @@ class DHT_Handler(Container):
 		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
 			self.SQL_obj.create_table(table_name=self.table_name, columns=columns)
 		# here we set all tokens on 0.
-			self.SQL_obj.update_token_in_column(table_name=self.table_name, data=False, reset_tokens=columns)
+			self.SQL_obj.update_token_in_column(table_name=self.table_name, input_data=False, reset_tokens=columns)
 		###################### db ##################
 		
 		# create_contener method automaticly check if file exist				
