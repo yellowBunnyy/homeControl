@@ -180,7 +180,9 @@ class DHT_Handler(Container):
 		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
 			self.SQL_obj.create_table(table_name=self.table_name, columns=columns)
 		# here we set all tokens on 0.
-			self.SQL_obj.update_token_in_column(table_name=self.table_name, input_data=False, reset_tokens=columns)
+			self.SQL_obj.save_data_to_db(data=tuple([0 for _ in range(len(columns))]),
+												table_name=self.table_name)
+
 		###################### db ##################
 		
 		# create_contener method automaticly check if file exist				
