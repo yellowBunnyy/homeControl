@@ -213,6 +213,9 @@ class HandlerCsv(HandlerFile):
 ############################# endBlock #############################
 
 class HandlerSQL(HandlerCsv):
+	'''DISCRIPTION:
+		this class handle everything what is related with operations 
+		on data bases'''
 
 	def __init__(self):
 		'''Here we initial conection to database and create
@@ -239,11 +242,10 @@ class HandlerSQL(HandlerCsv):
 				   ({})'''.format(table_name, ','.join(name_col for name_col in columns)))
 		print('table was created --> {}'.format(table_name))
 
-	def save_data_to_db(self, data:tuple, table_name:str, *comumns):
+	def save_data_to_db(self, data:tuple, table_name:str):
 		# this condition create table in db if dose not exist
-		if self.recognize_if_table_in_db_exist(table_name=table_name):
-			self.create_table(table_name=table_name, columns=comumns)
-
+		# if self.recognize_if_table_in_db_exist(table_name=table_name):
+		# 	self.create_table(table_name=table_name, columns=comumns)
 		if type(data) != tuple:
 			raise MyErrors('wrong data format!! allowed only tuple!!')
 		else:
@@ -252,8 +254,8 @@ class HandlerSQL(HandlerCsv):
 			print('data was saved --> {}'.format(data))
 			self.conn.commit()
 			print('was commited')
-			self.close_db()
-			print('db was closed')
+			# self.close_db()
+			# print('db was closed')
 
 	def compare_with_current_temp_and_save(self, full_time):
 		data = tuple(full_time.split(','))
@@ -265,6 +267,7 @@ class HandlerSQL(HandlerCsv):
 			pass
 
 	def read_from_db(self, table_name):
+		print('reading')
 		for row in self.c.execute('''SELECT * FROM {}'''.format(table_name)):
 			print(row)
 
