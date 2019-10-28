@@ -1,12 +1,18 @@
 import unittest, random, Adafruit_DHT as dht
 from logic_script import dht_handler
-
+from logic_script import save_to_file
 
 
 
 class Basic_tests(unittest.TestCase):
    # obj_convert_test = convert_time.TimeConvertet()
 	obj_dht_handler = dht_handler.DHT_Handler()
+	
+
+	obj_SQL_class = save_to_file.HandlerSQL()	
+	table_name = dht_handler.DHT_Handler().table_name
+	
+
 	SENSORS_PATH = dht_handler.p3_errors_path	
 	folder = 'logic_script'
 
@@ -139,8 +145,21 @@ class Basic_tests(unittest.TestCase):
 	# 	self.assertFalse(self.obj_dht_handler.check_if_file_on_folder(
 	# 		path=self.SENSORS_PATH, 
 	# 		folder=self.folder))
-	def test_haldler_errors_file(self):
-		self.obj_dht_handler.update()
+	def test_read_data_from_db(self):
+		self.obj_SQL_class.read_from_db(table_name=self.table_name)
+
+	# def test_fetch_data_from_db(self):
+	# 	column_names = [col for col, var in \
+	# 					self.obj_SQL_class.names_container_default.items()]		
+	# 	for single_col in column_names:
+	# 		print(f'column name --> {single_col}')			
+	# 		fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
+	# 						table_name=self.table_name,
+	# 						column_name=single_col)
+	# 		print(f'{fetched_data}')
+
+
+		
 
 
 
