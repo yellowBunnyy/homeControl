@@ -145,20 +145,34 @@ class Basic_tests(unittest.TestCase):
 	# 	self.assertFalse(self.obj_dht_handler.check_if_file_on_folder(
 	# 		path=self.SENSORS_PATH, 
 	# 		folder=self.folder))
-	def test_read_data_from_db(self):
-		self.obj_SQL_class.read_from_db(table_name=self.table_name)
+	# def test_read_data_from_db(self):
+	# 	self.obj_SQL_class.read_from_db(table_name=self.table_name)
+	column_names = [col for col, var in \
+						obj_dht_handler.names_container_default.items()]
+	data_to_update = list(100 + i for i in range(len(column_names)))
+	reset_tokens = list(0 for _ in range(len(column_names)))
 
-	# def test_fetch_data_from_db(self):
-	# 	column_names = [col for col, var in \
-	# 					self.obj_SQL_class.names_container_default.items()]		
-	# 	for single_col in column_names:
-	# 		print(f'column name --> {single_col}')			
-	# 		fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
-	# 						table_name=self.table_name,
-	# 						column_name=single_col)
-	# 		print(f'{fetched_data}')
+	# def test_update_single_col_in_db(self):		
+	# 	for col, int_data in zip(self.column_names, self.data_to_update):
+	# 		dict_data = {col: int_data}
+	# 		print(dict_data)
+	# 		self.obj_SQL_class.update_token_in_column(table_name=self.table_name,
+	# 													input_data=dict_data)
+		 
 
-
+	def test_fetch_data_from_db(self):		
+		for single_col, int_data in zip(self.column_names, self.reset_tokens):
+			print(f'column name --> {single_col}')			
+			fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
+							table_name=self.table_name,
+							column_name=single_col)
+			self.assertEqual(fetched_data, int_data, f'should be {int_data} is -=>{fetched_data}')
+			
+	# def test_reset_tokens_in_db(self):
+	# 	self.obj_SQL_class.update_token_in_column(table_name=self.table_name,
+	# 										input_data=False,
+	# 										reset_all_tokens=self.column_names)
+		
 		
 
 
