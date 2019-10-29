@@ -143,10 +143,10 @@ class DHT_Handler(Container):
 			###################### db ##################
 			int_from_db = self.SQL_obj.fetch_token_int_from_column(
 										table_name=self.table_name, 
-										column_name=sensor_name)
-			print(int_from_db, type(int_from_db), 10*'|')
+										column_name=sensor_name) + 1			
 			self.SQL_obj.update_token_in_column(table_name=self.table_name,
 												input_data={sensor_name:int_from_db})
+			print(int_from_db, sensor_name, 10*'|')
 			###################### db ##################
 			print(f'Token was added to {sensor_name} token info {sensor_token_int}!!')				
 			if sensor_token_int >=10:
