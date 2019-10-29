@@ -295,7 +295,7 @@ class HandlerSQL(HandlerCsv):
 		'''Update value in single column in table, key as room name val as token int 
 		e.g ('salon': 1) are a dictionary'''
 		# reset all tokens in columns       
-		if reset_all_tokens and data == False:
+		if reset_all_tokens and input_data == False:
 			for column in reset_all_tokens:
 				print(table_name, column, 0)
 				self.c.execute('''UPDATE {} SET {} = {}'''.format(
@@ -305,19 +305,20 @@ class HandlerSQL(HandlerCsv):
 		#set token in column
 		else:			
 			return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]        	
-			print(table_name, return_key_or_value_form_dict(dic_t=input_data), 
-				return_key_or_value_form_dict(dic_t=input_data,value=True),'in update_token_in_column')
+			# print(table_name, return_key_or_value_form_dict(dic_t=input_data), 
+			# 	return_key_or_value_form_dict(dic_t=input_data,value=True),'in update_token_in_column')
 			self.c.execute('''UPDATE {} SET {} = {}'''.format(
 															table_name,
 															return_key_or_value_form_dict(dic_t=input_data),
 															return_key_or_value_form_dict(dic_t=input_data, value=True)))
-			self.conn.commit()
+		self.conn.commit()
 
 	def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
 		'''fetch token as integer from data base and return that integer'''
 		db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
-		print(db_data.fetchone(), table_name, column_name)
-		return db_data.fetchone()[-1]
+		fetched_data = db_data.fetchone()
+		print(fetched_data, table_name, column_name)		
+		return fetched_data[-1]
 
 
 	
