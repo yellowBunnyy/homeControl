@@ -37,6 +37,7 @@ function read_data() {
 		unzip_dict(names=sensor_names, data=temps_data);
 		show_error_status(sensor_errors=sensor_errors);
 		clean_error_status(sensor_errors=sensor_errors);
+		read_from_db_file()
 	};
 	my_read.send();	
 	setTimeout(read_data, 67000); // pierwszy arg to wywoływana funkcja, zas drugi to czas odswierzania podanu w ms
@@ -97,7 +98,21 @@ function show_error_status(sensor_errors){
 	}
 	
 }
+
 function read_from_db_file(){
+	console.log('jestesmy w read_from_db_file')
+	var connection = new XMLHttpRequest();
+	connection.open('GET','/dbupdate');
+	connection.send();
+	//############ lepszed od onload ############\\
+	// paremetr 'load' odpowiada za typ nasłuchu w tym przypadku po załadowaniu strony
+	// wykona się zdarzenie
+	// request.addEventListener('load', function(){		
+	// 	var data = JSON.parse(this.responseText);
+	// 	generate_buttons(data_from_server=data)
+	// 	console.log(data);
+	// //###########################################\\
+	// })	
 //blank func
 
 }
