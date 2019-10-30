@@ -97,6 +97,10 @@ function show_error_status(sensor_errors){
 	}
 	
 }
+function read_from_db_file(){
+//blank func
+
+}
 
 function change_text_name(element_id, tag_obj, text_content){
 	//search element in tag an change text name
