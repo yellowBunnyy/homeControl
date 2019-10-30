@@ -160,6 +160,16 @@ def update_temp():
 	# we use here sensor list path with sensor name and pin e.g {...'salon':1...}    
 	container = dht_handler_obj.update()    
 	return 'data was update!! {0}'.format(container)
+
+@app.route('dbupdate', methods=['GET'])
+def update_db_file():
+	print('IN update_db_file')
+	if request.method == 'GET':
+		print('in condition')
+		return 'condition'
+	else:
+		print('not GET reqeust')
+		return False
 	
 
 if __name__ == '__main__':
