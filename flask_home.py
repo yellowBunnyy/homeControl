@@ -161,7 +161,7 @@ def update_temp():
 	container = dht_handler_obj.update()    
 	return 'data was update!! {0}'.format(container)
 
-@app.route('dbupdate', methods=['GET'])
+@app.route('/dbupdate', methods=['GET'])
 def update_db_file():
 	print('IN update_db_file')
 	if request.method == 'GET':
