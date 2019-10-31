@@ -155,7 +155,7 @@ def recive_current_time():
 @app.route('/updatetemp', methods=['GET'])
 def update_temp():
 	'''this function save to .json file readed temperature from sensors'''
-	print('IN UPDATE')
+	# print('IN UPDATE')
 	# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}
 	# we use here sensor list path with sensor name and pin e.g {...'salon':1...}    
 	container = dht_handler_obj.update()    
@@ -163,9 +163,9 @@ def update_temp():
 
 @app.route('/dbupdate', methods=['GET'])
 def update_db_file():
-	print('IN update_db_file')
+	# print('IN update_db_file')
 	if request.method == 'GET':
-		print('in condition')		
+		# print('in condition')		
 		SQL_obj = dht_handler_obj.SQL_obj
 		table_name = dht_handler_obj.table_name
 		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
