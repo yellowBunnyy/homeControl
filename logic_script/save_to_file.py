@@ -266,10 +266,9 @@ class HandlerSQL(HandlerCsv):
 			self.save_data_to_db()
 			pass
 
-	def read_from_db(self, table_name):
-		print('reading')
-		for row in self.c.execute('''SELECT * FROM {}'''.format(table_name)):
-			print(row)
+	def read_from_db(self, table_name:str) -> tuple:
+		print('reading')			
+		return [var for var in self.c.execute('''SELECT * FROM {}'''.format(table_name))][0]
 
 	def create_random_input_data(self, no_col):
 		date, hour = datetime.datetime.now().strftime('%d-%m-%Y,%H:%M').split(',')
@@ -319,6 +318,11 @@ class HandlerSQL(HandlerCsv):
 		fetched_data = db_data.fetchone()
 		print(fetched_data, table_name, column_name)		
 		return fetched_data[-1]
+
+	def fetch_column_names(self, table_name:str)-> list:
+		'''This method fetch comumns names and return them in list'''
+		column_list = self.c.execute(f'''SELECT * from {table_name}''')
+		return [row[0] for row in column_list.description]
 
 
 	
