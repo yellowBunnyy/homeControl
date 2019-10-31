@@ -266,8 +266,7 @@ class HandlerSQL(HandlerCsv):
 			self.save_data_to_db()
 			pass
 
-	def read_from_db(self, table_name:str) -> tuple:
-		print('reading')			
+	def read_from_db(self, table_name:str) -> tuple:				
 		return [var for var in self.c.execute('''SELECT * FROM {}'''.format(table_name))][0]
 
 	def create_random_input_data(self, no_col):
