@@ -165,8 +165,15 @@ def update_temp():
 def update_db_file():
 	print('IN update_db_file')
 	if request.method == 'GET':
-		print('in condition')
-		return 'condition'
+		print('in condition')		
+		SQL_obj = dht_handler_obj.SQL_obj
+		table_name = dht_handler_obj.table_name
+		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
+		dict_data = dict(zip(SQL_obj.fetch_column_names(table_name=table_name), 
+						SQL_obj.read_from_db(table_name=table_name)))
+		print(dict_data)				
+		json_data_to_server_as_response = json.dumps(dict_data)
+		return json_data_to_server_as_response
 	else:
 		print('not GET reqeust')
 		return False
