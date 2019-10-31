@@ -1,1 +1,2 @@
-{"temps": {"salon": {"temp": 22.0, "humidity": 59.0}, "maly_pokoj": {"temp": 26.0, "humidity": 37.0}, "kuchnia": {"temp": 23.0, "humidity": 55.0}, "WC": {"temp": 28.0, "humidity": 36.0}, "outside": {"temp": 9.9, "humidity": 97.7}}, "sockets": {"ON": "00:00", "OFF": "06:00"}, "heat_switch": {"ON": "00:00", "OFF": "23:50"}, "heats": {"Salon": 22, "maly_pokoj": 22, "kuchnia": 22}}
+{"temps": {"salon": {"temp": 22.0, "humidity": 57.0}, "maly_pokoj": {"temp": 26.0, "humidity": 38.0}, "kuchnia": {"temp": 23.0, "humidity": 53.0}, "WC": {"temp": 29.0, "humidity": 33.0}, "outside": {"temp": 0.1, "humidity": 99.9}}, "sockets": {"ON": "00:00", "OFF": "06:00"}, "heat_switch": {"ON": "00:00", "OFF": "23:50"}, "heats": {"Salon": 22, "maly_pokoj": 22, "kuchnia": 22}}
+

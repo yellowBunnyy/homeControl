@@ -18,10 +18,11 @@ class Container():
 		
 		self.data_path = data_path
 		self.sensors_path = sensors_path
-		self.errors_path = errors_path
+		self.errors_path = errors_path		
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
-		self.file_obj.create_container(self.sensors_path)	
+		self.file_obj.create_container(self.sensors_path)
+
 
 	def load_default(self):
 		names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'warsztat': 20, 'wc': 8,
@@ -47,11 +48,14 @@ class DHT_Handler(Container):
 	# errors = {'0': 'No sensor!! Check connection...', '1': 'Wrong read!!'}
 	sensor_errors_header = 'sensor_errors'
 
+
 	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
-		super().__init__(data_path, sensors_path, errors_path, file_obj)	
+		super().__init__(data_path, sensors_path, errors_path, file_obj)
+		self.SQL_obj = save_to_file.HandlerSQL()
+		self.table_name = 'errors_tokens'	
 
 
-	def dict_with_keys_as_room_names_and_dict_as_value(self):
+	def dict_with_keys_as_room_names_and_dict_as_value(self) -> dict:
 		# this method return dict include all room_names as key and dict as value where
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
@@ -114,38 +118,40 @@ class DHT_Handler(Container):
 			return 10
 
 	
-	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict):
+	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict) -> dict:
 		'''method who create correct data form in allow range e.g 
 		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
-
+		 
 		def remove_token_error(sensor_name:str):
 			'''This method remove all tokens from sensor when reads is OK'''			
-			# this variable represen how much we have tokens in sensor
-			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=0)
-			print(f'all tokens was remove from {sensor_name}')
+			self.SQL_obj.update_token_in_column(table_name=self.table_name, 
+												input_data={sensor_name:0})
+			print(f'all tokens was remove from {sensor_name}')			
 
-		def add_token_error(sensor_name:str, sensor_token_int:int):
+
+		def add_token_error(sensor_name:str):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
-			# this variable represen how much we have tokens in sensor
-			sensor_token_int += 1
-			self.file_obj.update_file(path=self.errors_path, key=sensor_name, content=sensor_token_int)
-			print(f'Token was added to {sensor_name} token info {sensor_token_int}!!')				
-			if sensor_token_int >=10:
-				print(f'błąd w {sensor_name}!!!!!!!')
-				return f'{sensor_name} tu mamy błąd'
+
+			# this -> int_token_from_db variable represen how much we have tokens in sensor
+			int_token_from_db = self.SQL_obj.fetch_token_int_from_column(
+										table_name=self.table_name, 
+										column_name=sensor_name) + 1			
+			self.SQL_obj.update_token_in_column(table_name=self.table_name,
+												input_data={sensor_name:int_token_from_db})			
+			print(f'Token was added to {sensor_name} token info {int_token_from_db}!!')				
+			if int_token_from_db >=10:
+				print(f'błąd w {sensor_name}!!!!!!!')				
 
 		readed_data = self.recognicion_device(pin=pin, name=sensor_name)
 
-		if not readed_data or readed_data == 10:
-			sensor_token_int = self.file_obj.load_from_json(path=self.errors_path)[sensor_name]
-			add_token_error(sensor_name=sensor_name, sensor_token_int=sensor_token_int)
+		if not readed_data or readed_data == 10:			
+			add_token_error(sensor_name=sensor_name)
 			print('from file!!!', data_from_file[sensor_name])
 			return data_from_file[sensor_name]				
 		else:									
 			data = {name: round(value,1) if value != None else value for name, value in zip(['temp','humidity'], readed_data[::-1])}				
 			self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name, content=data)
-			remove_token_error(sensor_name=sensor_name)
-			# print('from sensor', data)			
+			remove_token_error(sensor_name=sensor_name)						
 			return data
 	
 
@@ -154,9 +160,15 @@ class DHT_Handler(Container):
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''			
-		self.file_obj.create_container(path=self.errors_path, 
-			content={name: 0 for name in self.names_container_default})			
+			in main data file saved in .json '''
+			
+		columns = [col_room_name for col_room_name, pin in self.names_container_default.items()]		
+		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
+			self.SQL_obj.create_table(table_name=self.table_name, columns=columns)
+		# here we set all tokens on 0.
+			self.SQL_obj.save_data_to_db(data=tuple([0 for _ in range(len(columns))]),
+												table_name=self.table_name)
+		
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		return container
 

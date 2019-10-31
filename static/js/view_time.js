@@ -52,7 +52,7 @@ function send_current_time_to_server(current_time, delay=60) {
 	    send_current_time.open('POST','/current');
 //	    json_obj = JSON.stringify(obj_time_to_send)
 	    send_current_time.send(obj_time_to_send)
-		console.log('POSZŁO!!');
+		// console.log('POSZŁO!!');
 
 	}
 
