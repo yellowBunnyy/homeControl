@@ -35,8 +35,8 @@ function read_data() {
 		var sensor_errors = json_data['sensor_errors'];
 		var sensor_names = Object.keys(temps_data); // this obj and method return array with key names 
 		unzip_dict(names=sensor_names, data=temps_data);
-		show_error_status(sensor_errors=sensor_errors);
-		clean_error_status(sensor_errors=sensor_errors);
+		show_error_status(sensor_errors=sensor_errors); // do wyjebki
+		clean_error_status(sensor_errors=sensor_errors); // do wyjebki
 		read_from_db_file()
 	};
 	my_read.send();	
@@ -102,20 +102,19 @@ function show_error_status(sensor_errors){
 function read_from_db_file(){
 	console.log('jestesmy w read_from_db_file')
 	var connection = new XMLHttpRequest();
-	connection.open('GET','/dbupdate');
-	connection.send();
+	connection.open('GET','/dbupdate');	
 	//############ lepszed od onload ############\\
 	// paremetr 'load' odpowiada za typ nasłuchu w tym przypadku po załadowaniu strony
 	// wykona się zdarzenie
-	// request.addEventListener('load', function(){		
-	// 	var data = JSON.parse(this.responseText);
+	connection.addEventListener('load', function(){		
+		var data_recieved_from_server = JSON.parse(this.responseText);
 	// 	generate_buttons(data_from_server=data)
-	// 	console.log(data);
+		console.log(data);
 	// //###########################################\\
-	// })	
-//blank func
-
+	})
+	connection.send();
 }
+
 
 function change_text_name(element_id, tag_obj, text_content){
 	//search element in tag an change text name
