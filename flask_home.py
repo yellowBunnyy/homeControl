@@ -55,25 +55,14 @@ def temp_background():
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
 	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
-	# connect_sensor_error_handler()	
-	### refactor Start###
-	# main_loaded_file = save_to_file_obj.load_from_json(path=DATA_PATH)
 	
-	# temp_in_json = {f'{TEMP_KEY}': main_loaded_file[TEMP_KEY]}
-	# sensor_errors = {f'{SENSOR_ERRORS}': main_loaded_file[SENSOR_ERRORS]}
-	### refactor End#### 
-
-	if temp_in_json:
-		print('DATA WAS DETECTED TEMP')        
-		## temp_in_json.update(sensor_errors)		
+	if temp_in_json:				
 		json_data = json.dumps(temp_in_json)
 		return json_data
 	print('DATA NOT DETECTED temp')
 	# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}
 	# we use here sensor list path with sensor name and pin e.g {...'salon':1...}
-	container = {f'{TEMP_KEY}':dht_handler_obj.dict_with_keys_as_room_names_and_dict_as_value()}
-	# extend with sensor_errors
-	## container.update(sensor_errors)
+	container = {f'{TEMP_KEY}':dht_handler_obj.dict_with_keys_as_room_names_and_dict_as_value()}		
 	json_data = json.dumps(container)
 	return json_data
 
@@ -88,44 +77,35 @@ def set_time_request_handling():
 	'''function handel request for site. In this case handle a seted time from user and save it to .txt file,
 	if it is a POST methode othewise send to site response'''
 	# POST
-	if request.method == 'POST':
-		# print('POST')
+	if request.method == 'POST':		
 		data = json.loads(request.data)
 		# save data to file
 		save_to_file_obj.update_file(DATA_PATH, 'sockets', data)
 		return 'OK'
 	# GET
 	else:       
-		data = json.dumps(save_to_file_obj.load_from_json(DATA_PATH,'sockets'))
-		# print(data, type(data))
+		data = json.dumps(save_to_file_obj.load_from_json(DATA_PATH,'sockets'))		
 		return data
 
 @app.route('/settimeHeat', methods=['POST', 'GET'])
 def set_time_heat():        
-	if request.method == 'POST':
-		# print('POST from site')                
-		data = json.loads(request.data)
-		# print('in post',data, type(data))
+	if request.method == 'POST':		                
+		data = json.loads(request.data)		
 		save_to_file_obj.update_file(DATA_PATH, 'heat_switch', data)
 		return 'ok'
 	else:
-		# print('GET from site')
-		# test_data = {'ON':1,'OFF':2}
-		data = save_to_file_obj.load_from_json(DATA_PATH, 'heat_switch')
-		# print('in get',data, type(data))
+				
+		data = save_to_file_obj.load_from_json(DATA_PATH, 'heat_switch')		
 		return json.dumps(data)
 
 @app.route('/settempHeat', methods=['POST', 'GET'])
 def set_temp_heat():
 	if request.method == 'POST':
-		data = json.loads(request.data)
-		# print(data, type(data))
+		data = json.loads(request.data)		
 		save_to_file_obj.update_file(DATA_PATH, 'heats', data)
 		return 'ok'
-	else:
-		# print('GET from seted temps heat')
-		data = save_to_file_obj.load_from_json(DATA_PATH, 'heats')
-		# print('in GEt', data, type(data) )        
+	else:		
+		data = save_to_file_obj.load_from_json(DATA_PATH, 'heats')		        
 		return json.dumps(data)
 
 
@@ -137,20 +117,15 @@ def recive_current_time():
 	full_time = datetime.datetime.now().strftime("%d/%m/%Y,%H:%M")	
 	current_date, current_time = full_time.split(',')	
 	if request.method == 'POST':
-		print('Aktualna godzina ze strony: {}'.format(request.data.decode('ascii')))
-		# current_time = request.data.decode('ascii')        
+		print('Aktualna godzina ze strony: {}'.format(request.data.decode('ascii')))	      
 		virtual_relay_obj.switch_handler(current_time=current_time)
 		save_to_file.HandlerCsv().save_temp_to_csv_handler(
-			full_time=full_time)
-		# save_to_file.HandlerSQL(db_file=r'/logic_script/temp_readings.db').
+			full_time=full_time)		
 		return 'ok'
 	else:
 		# send date to site 
 		return current_date
 
-# @app.route('/refreshdate', methods=['GET'])
-# def refresh_date():
-# 	pass		
 
 @app.route('/updatetemp', methods=['GET'])
 def update_temp():
@@ -162,10 +137,8 @@ def update_temp():
 	return 'data was update!! {0}'.format(container)
 
 @app.route('/dbupdate', methods=['GET'])
-def update_db_file():
-	# print('IN update_db_file')
-	if request.method == 'GET':
-		# print('in condition')		
+def update_db_file():	
+	if request.method == 'GET':			
 		SQL_obj = dht_handler_obj.SQL_obj
 		table_name = dht_handler_obj.table_name
 		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
