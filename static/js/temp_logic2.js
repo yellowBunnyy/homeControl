@@ -34,10 +34,8 @@ function read_data() {
 		var temps_data = json_data['temps'];
 		var sensor_errors = json_data['sensor_errors'];
 		var sensor_names = Object.keys(temps_data); // this obj and method return array with key names 
-		unzip_dict(names=sensor_names, data=temps_data);
-		show_error_status(sensor_errors=sensor_errors); // do wyjebki
-		clean_error_status(sensor_errors=sensor_errors); // do wyjebki
-		read_from_db_file()
+		unzip_dict(names=sensor_names, data=temps_data);		
+		read_from_db_file();
 	};
 	my_read.send();	
 	setTimeout(read_data, 67000); // pierwszy arg to wywoływana funkcja, zas drugi to czas odswierzania podanu w ms
@@ -99,23 +97,6 @@ function show_error_status(sensor_errors){
 	
 }
 
-function read_from_db_file(){
-	console.log('jestesmy w read_from_db_file')
-	var connection = new XMLHttpRequest();
-	connection.open('GET','/dbupdate');	
-	//############ lepszed od onload ############\\
-	// paremetr 'load' odpowiada za typ nasłuchu w tym przypadku po załadowaniu strony
-	// wykona się zdarzenie
-	connection.addEventListener('load', function(){		
-		var data_recieved_from_server = JSON.parse(this.responseText);
-	// 	generate_buttons(data_from_server=data)
-		console.log(data);
-	// //###########################################\\
-	})
-	connection.send();
-}
-
-
 function change_text_name(element_id, tag_obj, text_content){
 	//search element in tag an change text name
 	var new_text_content = search_element_in_tag(element_id, tag_obj, element_id_flag=true)
@@ -165,3 +146,17 @@ function clean_error_status(sensor_errors){
 	
 }
 	
+function read_from_db_file(){
+	console.log('jestesmy w read_from_db_file')
+	var connection = new XMLHttpRequest();
+	connection.open('GET','/dbupdate');		
+	// paremetr 'load' odpowiada za typ nasłuchu w tym przypadku po załadowaniu strony
+	// wykona się zdarzenie
+	connection.addEventListener('load', function(){		
+		var data_recieved_from_server = JSON.parse(this.responseText);	
+		// console.log(data_recieved_from_server);
+		show_error_status(sensor_errors=data_recieved_from_server);
+		clean_error_status(sensor_errors=data_recieved_from_server);	
+	})
+	connection.send();
+}
