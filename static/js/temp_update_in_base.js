@@ -1,6 +1,6 @@
 
 function update_data_temp(){
-	console.log('all temps was update in base_update_temp');
+	// console.log('all temps was update in base_update_temp');
     //console.log('in  update_data')    
     var my_read = new XMLHttpRequest();
 	my_read.open('GET', '/updatetemp');
