@@ -185,13 +185,13 @@ class Relays_class(Dioda, TimeConvertet):
 
 	def get_post_lightting(self, request, data=None, comunicate=None, test_data_to_send=None):
 		'''this function handle requests data must be in dict object'''      
-		if request.method == 'GET':
-			print(f'in GET -- > {comunicate}')
+		if request.method == 'GET':			
 			if test_data_to_send:           
 				return test_data_to_send
 			else:            
 				return json.dumps(data)
 		else:
+			# here we recive from site json obj with room as key and status as int 0 or 1 (OFF, ON)
 			data_from_site = json.loads(request.data.decode('ascii'))        
 			for room_name, status in data_from_site.items():
 				pass
