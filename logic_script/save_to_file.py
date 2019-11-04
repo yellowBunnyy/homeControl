@@ -108,7 +108,7 @@ class HandlerCsv(HandlerFile):
 		temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
 		for trigger_time in self.TRIGGER_HOURS:
 			# date = self.convert_to_str(datetime.datetime.now())
-			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"}date: {date}' )			
+			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} date: {date}' )			
 			if trigger_time == current_time:			
 				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
 				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
@@ -255,18 +255,11 @@ class HandlerSQL(HandlerCsv):
 			self.conn.commit()
 			print('was commited')
 			# self.close_db()
-			# print('db was closed')
+			# print('db was closed')	
+			
 
-	def compare_with_current_temp_and_save(self, full_time):
-		data = tuple(full_time.split(','))
-		temps_values_tup = tuple(value for room, value in self.TEMP_DATA.items())
-		all_data = data + temps_values_tup
-		print(all_data, )
-		if current_time in TRIGGER_HOURS:
-			self.save_data_to_db()
-			pass
-
-	def read_from_db(self, table_name:str) -> tuple:				
+	def read_from_db(self, table_name:str) -> tuple:
+		'''this method read one row of table and return values in tuple'''				
 		return [var for var in self.c.execute('''SELECT * FROM {}'''.format(table_name))][0]
 
 	def create_random_input_data(self, no_col):
