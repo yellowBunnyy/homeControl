@@ -74,7 +74,7 @@ def lighting_relays_loader():
 
 @app.route('/settimeSockets', methods = ['POST', 'GET'])
 def set_time_request_handling():
-	'''function handel request for site. In this case handle a seted time from user and save it to .txt file,
+	'''function handel request for site. In this case handle a seted time from user and save it to .json file,
 	if it is a POST methode othewise send to site response'''
 	# POST
 	if request.method == 'POST':		
@@ -93,8 +93,7 @@ def set_time_heat():
 		data = json.loads(request.data)		
 		save_to_file_obj.update_file(DATA_PATH, 'heat_switch', data)
 		return 'ok'
-	else:
-				
+	else:				
 		data = save_to_file_obj.load_from_json(DATA_PATH, 'heat_switch')		
 		return json.dumps(data)
 
