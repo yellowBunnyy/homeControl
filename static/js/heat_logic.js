@@ -24,10 +24,10 @@ function request_function(method, url, data, id){
 		console.log(`data was sended: ${json_data}`);
 		conection_to_python_server.send(json_data);
 	}else if(method === 'GET'){		
-		var status = document.getElementById(id)
 		conection_to_python_server.open(method, url);
 		conection_to_python_server.send();
 		if (id){
+			var status = document.getElementById(id);
 			conection_to_python_server.onload = function(){
 			var text = conection_to_python_server.responseText;
 			console.log(text);
@@ -54,10 +54,6 @@ function request_function(method, url, data, id){
 	
 }
 
-function request_GET_function(id_s){
-
-
-}
 
 function eventTime(){
 	//TIME
