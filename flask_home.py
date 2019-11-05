@@ -6,7 +6,7 @@ from logic_script import virtual_relay, save_to_file, dht_handler
 app = Flask(__name__)
 print(os.getcwd())
 TEMP_KEY = 'temps'
-SOCKETS_KEY = 'sockets'
+SOCKETS_TABLE = 'sockets_table'
 SENSOR_ERRORS = 'sensor_errors'
 save_to_file_obj = save_to_file.HandlerFile()
 virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
@@ -14,7 +14,6 @@ DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
 ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
-DB_ERRORS_PATH = save_to_file_obj.STATIC_DB_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
@@ -75,16 +74,39 @@ def lighting_relays_loader():
 @app.route('/settimeSockets', methods = ['POST', 'GET'])
 def set_time_request_handling():
 	'''function handel request for site. In this case handle a seted time from user and save it to .json file,
-	if it is a POST methode othewise send to site response'''
+	if it is a POST methode othewise send to site response.
+	We use here dht_handler_obj instead save_to_file_obj because there we
+	have variable which have reference to HandlerSQL. So is useless to create new
+	reference.'''
+	
+	# Check if table exist.
+	# True if does not existance otherwise False	
+	if dht_handler_obj.SQL_obj.recognize_if_table_in_db_exis(table_name=SOCKETS_TABLE):
+			# here we create table
+			dht_handler_obj.SQL_obj.create_table(table_name=SOCKETS_TABLE)
+			# add default hours values to row when we crate a new table
+			dht_handler_obj.SQL_obj.save_data_to_db(table_name=SOCKETS_TABLE,
+													data=('00:00','00:00'))
 	# POST
-	if request.method == 'POST':		
+	if request.method == 'POST':
+		# fetch data from site and decode to dict object		
 		data = json.loads(request.data)
 		# save data to file
-		save_to_file_obj.update_file(DATA_PATH, 'sockets', data)
+		save_to_file_obj.update_file(path=DATA_PATH, key='sockets', content=data)
+		###########db###########
+		for key, val in data.items():
+			dht_handler_obj.SQL_obj.update_token_in_columns(table_name=SOCKETS_TABLE,
+														input_data={key:val})
+		###########db###########
+
 		return 'OK'
 	# GET
 	else:       
-		data = json.dumps(save_to_file_obj.load_from_json(DATA_PATH,'sockets'))		
+		data = json.dumps(save_to_file_obj.load_from_json(path=DATA_PATH,key='sockets'))
+		###########db###########
+		data_from_db = dht
+
+		###########db###########
 		return data
 
 @app.route('/settimeHeat', methods=['POST', 'GET'])
