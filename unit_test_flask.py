@@ -1,6 +1,6 @@
 import unittest, random, Adafruit_DHT as dht
-from logic_script import dht_handler
-from logic_script import save_to_file
+from logic_script import dht_handler, save_to_file
+import flask_home
 
 
 
@@ -9,8 +9,9 @@ class Basic_tests(unittest.TestCase):
 	obj_dht_handler = dht_handler.DHT_Handler()
 	
 
-	obj_SQL_class = save_to_file.HandlerSQL()	
-	table_name = dht_handler.DHT_Handler().table_name
+	obj_SQL_class = obj_dht_handler.SQL_obj
+	table_name = obj_dht_handler.table_name
+	table_name_sockets = flask_home.SOCKETS_TABLE
 	
 
 	SENSORS_PATH = dht_handler.p3_errors_path	
@@ -147,10 +148,10 @@ class Basic_tests(unittest.TestCase):
 	# 		folder=self.folder))
 	# def test_read_data_from_db(self):
 	# 	self.obj_SQL_class.read_from_db(table_name=self.table_name)
-	column_names = [col for col, var in \
-						obj_dht_handler.names_container_default.items()]
-	data_to_update = list(100 + i for i in range(len(column_names)))
-	reset_tokens = list(0 for _ in range(len(column_names)))
+	# column_names = [col for col, var in \
+	# 					obj_dht_handler.names_container_default.items()]
+	# data_to_update = list(100 + i for i in range(len(column_names)))
+	# reset_tokens = list(0 for _ in range(len(column_names)))
 
 	# def test_update_single_col_in_db(self):		
 	# 	for col, int_data in zip(self.column_names, self.data_to_update):
@@ -160,13 +161,13 @@ class Basic_tests(unittest.TestCase):
 	# 													input_data=dict_data)
 		 
 
-	def test_fetch_data_from_db(self):		
-		for single_col, int_data in zip(self.column_names, self.reset_tokens):
-			print(f'column name --> {single_col}')			
-			fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
-							table_name=self.table_name,
-							column_name=single_col)
-			self.assertEqual(fetched_data, int_data, f'should be {int_data} is -=>{fetched_data}')
+	# def test_fetch_data_from_db(self):		
+	# 	for single_col, int_data in zip(self.column_names, self.reset_tokens):
+	# 		print(f'column name --> {single_col}')			
+	# 		fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
+	# 						table_name=self.table_name,
+	# 						column_name=single_col)
+	# 		self.assertEqual(fetched_data, int_data, f'should be {int_data} is -=>{fetched_data}')
 			
 	# def test_reset_tokens_in_db(self):
 	# 	self.obj_SQL_class.update_token_in_column(table_name=self.table_name,
@@ -176,7 +177,11 @@ class Basic_tests(unittest.TestCase):
 		
 
 
+	def test_create_db(self):
+		self.obj_SQL_class.recognize_if_table_in_db_exist(
+			table_name=self.table_name_sockets)
 
+		
 		
 
 
