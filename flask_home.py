@@ -98,14 +98,20 @@ def set_time_request_handling():
 			dht_handler_obj.SQL_obj.update_token_in_columns(table_name=SOCKETS_TABLE,
 														input_data={key:val})
 		###########db###########
-
 		return 'OK'
 	# GET
 	else:       
 		data = json.dumps(save_to_file_obj.load_from_json(path=DATA_PATH,key='sockets'))
 		###########db###########
-		data_from_db = dht
-
+		db_data = {}
+		# here we got column names form tabel. In this case 'ON' or 'OFF'
+		columns_list = fetch_column_names(table_name=SOCKETS_TABLE)
+		# in this case 'ON' or 'OFF'
+		for single_col in columns_list:			
+			str_hour = dht_handler_obj.SQL_obj.fetch_token_int_from_column(table_name=SOCKETS_TABLE,
+																				column_name=single_col)
+			db_data[single_col] = str_hour			
+		print(db_data)
 		###########db###########
 		return data
 
