@@ -283,7 +283,7 @@ class HandlerSQL(HandlerCsv):
 			return True
 
 	def update_token_in_column(self, table_name:str, input_data:(dict, bool) = False, reset_all_tokens:list = False):
-		'''Update value in single column in table, key as room name val as token int 
+		'''Update value in SINGLE! column in table, key as room name val as token int 
 		e.g ('salon': 1) are a dictionary'''
 		# reset all tokens in columns       
 		if reset_all_tokens and input_data == False:
