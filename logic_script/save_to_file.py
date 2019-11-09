@@ -239,7 +239,7 @@ class HandlerSQL(HandlerCsv):
 		# create new table
 		# print(','.join(name_col for name_col in columns))
 		self.c.execute('''CREATE TABLE {}
-				   ({})'''.format(table_name, ','.join(name_col for name_col in columns)))
+				   ({})'''.format(table_name, ','.join(f'"{name_col}"' for name_col in columns)))
 		print('table was created --> {}'.format(table_name))
 
 	def save_data_to_db(self, data:tuple, table_name:str):
@@ -288,7 +288,7 @@ class HandlerSQL(HandlerCsv):
 		# reset all tokens in columns       
 		if reset_all_tokens and input_data == False:
 			for column in reset_all_tokens:
-				print(table_name, column, 0)
+				# print(table_name, column, 0)
 				self.c.execute('''UPDATE {} SET {} = {}'''.format(
 														table_name,
 														column,
@@ -298,7 +298,7 @@ class HandlerSQL(HandlerCsv):
 			return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]        	
 			# print(table_name, return_key_or_value_form_dict(dic_t=input_data), 
 			# 	return_key_or_value_form_dict(dic_t=input_data,value=True),'in update_token_in_column')
-			self.c.execute('''UPDATE {} SET {} = {}'''.format(
+			self.c.execute('''UPDATE {} SET "{}" = {}'''.format(
 															table_name,
 															return_key_or_value_form_dict(dic_t=input_data),
 															return_key_or_value_form_dict(dic_t=input_data, value=True)))
@@ -306,9 +306,9 @@ class HandlerSQL(HandlerCsv):
 
 	def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
 		'''fetch token as integer from data base and return that integer'''
-		db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
+		db_data = self.c.execute('''SELECT "{}" FROM {}'''.format(column_name, table_name))
 		fetched_data = db_data.fetchone()
-		print(fetched_data, table_name, column_name)		
+		# print(fetched_data, table_name, column_name)		
 		return fetched_data[-1]
 
 	def fetch_column_names(self, table_name:str)-> list:
