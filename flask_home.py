@@ -19,8 +19,7 @@ dht_handler_obj = dht_handler.DHT_Handler(
 		sensors_path= SENSOR_PATH,
 		errors_path = ERRORS_PATH,		
 		file_obj=save_to_file_obj)
-
-
+SQL_obj = dht_handler_obj.SQL_obj
 #create container to data
 print(save_to_file_obj.create_container(DATA_PATH))
 
@@ -81,12 +80,13 @@ def set_time_request_handling():
 	
 	# Check if table exist.
 	# True if does not existance otherwise False	
-	if dht_handler_obj.SQL_obj.recognize_if_table_in_db_exis(table_name=SOCKETS_TABLE):
+	if SQL_obj.recognize_if_table_in_db_exist(table_name=SOCKETS_TABLE):
 			# here we create table
-			dht_handler_obj.SQL_obj.create_table(table_name=SOCKETS_TABLE)
+			SQL_obj.create_table(table_name=SOCKETS_TABLE, 
+								columns=('ON','OFF'))
 			# add default hours values to row when we crate a new table
-			dht_handler_obj.SQL_obj.save_data_to_db(table_name=SOCKETS_TABLE,
-													data=('00:00','00:00'))
+			SQL_obj.save_data_to_db(table_name=SOCKETS_TABLE,
+									data=('00:00','00:00'))
 	# POST
 	if request.method == 'POST':
 		# fetch data from site and decode to dict object		
@@ -95,8 +95,8 @@ def set_time_request_handling():
 		save_to_file_obj.update_file(path=DATA_PATH, key='sockets', content=data)
 		###########db###########
 		for key, val in data.items():
-			dht_handler_obj.SQL_obj.update_token_in_columns(table_name=SOCKETS_TABLE,
-														input_data={key:val})
+			SQL_obj.update_token_in_column(table_name=SOCKETS_TABLE,
+											input_data={key:val})
 		###########db###########
 		return 'OK'
 	# GET
@@ -105,13 +105,13 @@ def set_time_request_handling():
 		###########db###########
 		db_data = {}
 		# here we got column names form tabel. In this case 'ON' or 'OFF'
-		columns_list = fetch_column_names(table_name=SOCKETS_TABLE)
+		columns_list = SQL_obj.fetch_column_names(table_name=SOCKETS_TABLE)
 		# in this case 'ON' or 'OFF'
 		for single_col in columns_list:			
-			str_hour = dht_handler_obj.SQL_obj.fetch_token_int_from_column(table_name=SOCKETS_TABLE,
-																				column_name=single_col)
+			str_hour = SQL_obj.fetch_token_int_from_column(table_name=SOCKETS_TABLE,
+															column_name=single_col)
 			db_data[single_col] = str_hour			
-		print(db_data)
+		print(db_data,'|')
 		###########db###########
 		return data
 
@@ -165,8 +165,7 @@ def update_temp():
 
 @app.route('/dbupdate', methods=['GET'])
 def update_db_file():	
-	if request.method == 'GET':			
-		SQL_obj = dht_handler_obj.SQL_obj
+	if request.method == 'GET':		
 		table_name = dht_handler_obj.table_name
 		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
 		dict_data = dict(zip(SQL_obj.fetch_column_names(table_name=table_name), 
