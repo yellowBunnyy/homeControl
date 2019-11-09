@@ -1,4 +1,3 @@
-
 import time, sys, os, Adafruit_DHT as dht
 from logic_script import save_to_file, virtual_relay
 from time import sleep
