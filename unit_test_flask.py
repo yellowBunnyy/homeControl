@@ -6,16 +6,25 @@ import flask_home
 
 class Basic_tests(unittest.TestCase):
    # obj_convert_test = convert_time.TimeConvertet()
-	obj_dht_handler = dht_handler.DHT_Handler()
-	
-
+	flask_obj = flask_home
+	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
 	table_name = obj_dht_handler.table_name
-	table_name_sockets = flask_home.SOCKETS_TABLE
+	table_name_sockets = flask_obj.SOCKETS_TABLE
+
+	# def test_create_db(self):
+	# 	self.obj_SQL_class.recognize_if_table_in_db_exist(
+	# 		table_name=self.table_name_sockets)
+
+	def test_read_from_db(self):
+		print(self.obj_SQL_class.read_from_db(table_name=self.table_name))
+
+		
+
 	
 
-	SENSORS_PATH = dht_handler.p3_errors_path	
-	folder = 'logic_script'
+	# SENSORS_PATH = dht_handler.p3_errors_path	
+	# folder = 'logic_script'
 
 	# time convert tests
 	# def test_convert_test_normal(self):
@@ -177,10 +186,9 @@ class Basic_tests(unittest.TestCase):
 		
 
 
-	def test_create_db(self):
-		self.obj_SQL_class.recognize_if_table_in_db_exist(
-			table_name=self.table_name_sockets)
 
+
+	
 		
 		
 
