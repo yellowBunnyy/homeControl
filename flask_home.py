@@ -20,8 +20,35 @@ dht_handler_obj = dht_handler.DHT_Handler(
 		errors_path = ERRORS_PATH,		
 		file_obj=save_to_file_obj)
 SQL_obj = dht_handler_obj.SQL_obj
+
+# this var have reference to dict with key as table_name and value as
+# list with method from SQL_Handlet class
+SQL_TABELS_NAMES = {
+	'sockets': [SQL_obj.table_sockets,
+				SQL_obj.insert_data_to_sockets_table,
+				('00:00','00:00')], 
+	'errors_tokens_and_seted_temperature': 
+					[SQL_obj.table_errors_tokens_and_seted_temperature,
+					SQL_obj.insert_data_token_table,
+					(0,0,0,0,0)]
+	}
+######creating all tabels in data base#####
+# varible object represent list content
+for table_name, objects in SQL_TABELS_NAMES.items():
+	if SQL_obj.recognize_if_table_in_db_exist(table_name=table_name):
+		table_sheet, insert_data, default_values = objects
+		SQL_obj.create_table(
+				table_sheet=table_sheet())		
+		# insert two to rows in one table
+		for _ in range(2):
+			insert_data(default_values)
+	else:
+		print(f'table {table_name} EXISTS')
+######endBlock#####
+
 #create container to data
 print(save_to_file_obj.create_container(DATA_PATH))
+
 
 class MyExceptions(Exception):
 	pass
