@@ -142,12 +142,12 @@ class Relays_class(Dioda, TimeConvertet):
 			off = datetime.datetime(year=now.year, month=now.month, day=now.day + 1, hour=off.hour, minute=off.minute)
 			if on < ct < off:
 				if flag:
-					self.relay(status=0, pin=pin)
+					self.relay(status=1, pin=pin)
 				else:
 					return True
 			else:
 				if flag:
-					self.relay(status=1,pin=pin)
+					self.relay(status=0,pin=pin)
 				else:
 					return False
 		else:
@@ -156,12 +156,12 @@ class Relays_class(Dioda, TimeConvertet):
 			 f'{True if on < current_time < off else False} ')
 			if on < current_time < off:				
 				if flag:
-					self.relay(status=0, pin=pin)
+					self.relay(status=1, pin=pin)
 				else:
 					return True
 			else:
 				if flag:
-					self.relay(status=1, pin=pin)
+					self.relay(status=0, pin=pin)
 				else:
 					return False
 
@@ -225,10 +225,10 @@ class Relays_class(Dioda, TimeConvertet):
 				print(f'ustawiona: {temp1}, odczytana: {temp2}, {temp1 > temp2}, {name1}')
 				if temp1 > temp2: # temp1 ustawiona, temp2 odczytana
 					# turn on     		
-					self.relay(status=0,pin=names_and_pins[name1.lower()])
+					self.relay(status=1,pin=names_and_pins[name1.lower()])
 				else:
 					# turn off
-					self.relay(status=1,pin=names_and_pins[name1.lower()])         
+					self.relay(status=0,pin=names_and_pins[name1.lower()])         
 
 		# obj_relay = virtual_relay.Relays_class(obj=self.file_obj)
 		test = {"sockets":19, "heat_switch":None, "heats":{'salon':21,'maly_pokoj':20,'kuchnia':26}, "temps":None}
