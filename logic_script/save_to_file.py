@@ -231,6 +231,42 @@ class HandlerSQL(HandlerCsv):
 			self.conn = sqlite3.connect(db_file, check_same_thread=False)
 			self.c = self.conn.cursor()
 			print('have connetction')
+			# this var have reference to dict with key as table_name and value as
+			# list with method from SQL_Handlet class
+			# self.initial_table_in_db()
+
+			
+	def initial_table_in_db(self, add_default_value:bool=True):
+		'''Here we initial all tabels in data base.
+		add_default_value: initial default value in tabels if this argument is true
+		otherwise return list which contain table names as string '''
+
+		SQL_TABELS_NAMES = {
+		'sockets': [self.table_sockets,
+					self.insert_data_to_sockets_table,
+					('00:00','00:00')], 
+		'errors_tokens_and_seted_temperature': 
+						[self.table_errors_tokens_and_seted_temperature,
+						self.insert_data_token_table,
+						(0,0,0,0,0)],
+		}
+		######creating all tabels in data base#####
+		# varible object represent list content
+		if add_default_value:			
+			for table_name, objects in SQL_TABELS_NAMES.items():
+				if self.recognize_if_table_in_db_exist(table_name=table_name):
+					table_sheet, insert_data_method, default_values = objects
+					self.create_table(
+							table_sheet=table_sheet())		
+					# insert two to rows in one table
+					for _ in range(2):
+						insert_data_method(default_values)
+				else:
+					print(f'table {table_name} EXISTS')
+			######endBlock#####
+		else:
+			# return table names as str in list object
+			return list(SQL_TABELS_NAMES.keys())
 
 
 	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
@@ -365,7 +401,7 @@ class HandlerSQL(HandlerCsv):
 			return fetched_data
 
 
-	def fetch_data_from_tokens(self, row:int=False, room_name:str=''):
+	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False) -> (list, int):
 		'''Fetch all data from error_tokens_and... table'''
 		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
 		cursor = self.conn.cursor()
@@ -377,10 +413,15 @@ class HandlerSQL(HandlerCsv):
 			dic_obj = dict(zip(["salon","maly_pokoj","kuchnia","WC","outside"], all_data[row - 1]))
 			print(dic_obj)
 			if room_name:
+				# return int
 				return dic_obj[room_name]
-		return all_data
-
-
+			#return list
+			return all_data[row-1][1:]
+		#return list
+		if with_id:
+			return all_data
+		else:
+			return [tup[1:] for tup in all_data]
 
 
 	
