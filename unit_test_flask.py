@@ -1,6 +1,6 @@
 import unittest, random, Adafruit_DHT as dht
 from logic_script import dht_handler, save_to_file
-import flask_home
+import flask_home, os
 
 
 
@@ -9,15 +9,54 @@ class Basic_tests(unittest.TestCase):
 	flask_obj = flask_home
 	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
-	table_name = obj_dht_handler.table_name
-	table_name_sockets = flask_obj.SOCKETS_TABLE
+	# initial creating database
+	# obj_SQL_class.initial_table_in_db()
+	
+	def test_db_has_been_created(self,):
+		'''whether db has been created'''
+		# logic_script folder content
+		db_name = os.path.split(self.obj_SQL_class.STATIC_DB_ERRORS_PATH)[-1]
+		print(db_name)
+		folder_content = os.listdir(os.path.join(os.getcwd(),'logic_script'))
+		flag_if_exist = True if db_name in folder_content else False
+		self.assertTrue(flag_if_exist)
+
+	def test_default_value_tokens_table(self):
+		answer = [0,] * 10
+		def flat_list(data):
+			container = []
+			for val in data:
+				if type(val) == int:
+					container += [val]
+				else:
+					container += flat_list(val)
+			return container
+		#list with two tuples
+		two_dimension_list = self.obj_SQL_class.fetch_data_from_tokens()
+		print(two_dimension_list)
+		flat_data = flat_list(two_dimension_list)
+		print(flat_data)
+		flag = flat_data == answer
+		print(f'{flat_data} {"==" if flag else "!="} {answer}')
+		self.assertTrue(flag)
+
+
+
+	
+
+
+
+
+
+
+
 
 	# def test_create_db(self):
 	# 	self.obj_SQL_class.recognize_if_table_in_db_exist(
 	# 		table_name=self.table_name_sockets)
 
-	def test_read_from_db(self):
-		print(self.obj_SQL_class.read_from_db(table_name=self.table_name))
+	# def test_read_from_db(self):
+	# 	print(self.obj_SQL_class.read_from_db(table_name=self.table_name))
 
 		
 
