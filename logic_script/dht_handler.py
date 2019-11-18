@@ -159,14 +159,14 @@ class DHT_Handler(Container):
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''			
-				
-		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
-			self.SQL_obj.create_table(
-				table_sheet=SQL_obj.table_errors_tokens_and_seted_temperature())
-		# here we set all tokens on 0.
-			self.SQL_obj.insert_data_token_table(
-				tokens_int=tuple(0 for _ in self.names_container_default))		
+			in main data file saved in .json '''
+							
+		# if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
+		# 	self.SQL_obj.create_table(
+		# 		table_sheet=SQL_obj.table_errors_tokens_and_seted_temperature())
+		# # here we set all tokens on 0.
+		# 	self.SQL_obj.insert_data_token_table(
+		# 		tokens_int=tuple(0 for _ in self.names_container_default))		
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		return container
 
