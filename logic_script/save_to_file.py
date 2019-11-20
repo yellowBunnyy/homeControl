@@ -233,7 +233,7 @@ class HandlerSQL(HandlerCsv):
 			print('have connetction')
 			# this var have reference to dict with key as table_name and value as
 			# list with method from SQL_Handlet class
-			# self.initial_table_in_db()
+			self.initial_table_in_db()
 
 			
 	def initial_table_in_db(self, add_default_value:bool=True):
@@ -241,19 +241,18 @@ class HandlerSQL(HandlerCsv):
 		add_default_value: initial default value in tabels if this argument is true
 		otherwise return list which contain table names as string '''
 
-		SQL_TABELS_NAMES = {
-		'sockets': [self.table_sockets,
+		SQL_dict = {
+		self.SQL_TABELS_NAMES[0]: [self.table_sockets,
 					self.insert_data_to_sockets_table,
 					('00:00','00:00')], 
-		'errors_tokens_and_seted_temperature': 
+		self.SQL_TABELS_NAMES[1]: 
 						[self.table_errors_tokens_and_seted_temperature,
 						self.insert_data_token_table,
 						(0,0,0,0,0)],
-		}
-		######creating all tabels in data base#####
-		# varible object represent list content
-		if add_default_value:			
-			for table_name, objects in SQL_TABELS_NAMES.items():
+		}		
+		if add_default_value:
+			# varible object represent list content			
+			for table_name, objects in SQL_dict.items():				
 				if self.recognize_if_table_in_db_exist(table_name=table_name):
 					table_sheet, insert_data_method, default_values = objects
 					self.create_table(
@@ -263,10 +262,10 @@ class HandlerSQL(HandlerCsv):
 						insert_data_method(default_values)
 				else:
 					print(f'table {table_name} EXISTS')
-			######endBlock#####
+			
 		else:
 			# return table names as str in list object
-			return list(SQL_TABELS_NAMES.keys())
+			return list(SQL_dict.keys())
 
 
 	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
@@ -286,7 +285,7 @@ class HandlerSQL(HandlerCsv):
 		column_list = self.c.execute(f'''SELECT * from {table_name}''')
 		return [row[0] for row in column_list.description]
 
-	def table_sockets(self)-> tuple:
+	def table_sockets(self,)-> tuple:
 		'''Table sheet for table sockets
 		return: tuple with table name and sql sheet'''        
 		sql = '''CREATE TABLE IF NOT EXISTS sockets (
@@ -351,16 +350,16 @@ class HandlerSQL(HandlerCsv):
 		times: tuple with seted hours in str format
 		row_id: row int format to update'''
 		# varible contain times in str and row id in int
-		times += (row_id,)
-		print(times)
+		times += (row_id,)		
 		sql = '''UPDATE sockets SET
 				turn_on = ?,
 				turn_off = ?
 				WHERE id = ?'''
 		cursor = self.conn.cursor()
-		print('data was update {}'.format(times))
+		print('data was update in db {}'.format(times))
 		cursor.execute(sql,tuple(times))
 		self.conn.commit()
+		# add somewhere method for prevent when we put does not existing row
 
 
 	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row_id:int=False):
@@ -387,10 +386,7 @@ class HandlerSQL(HandlerCsv):
 		sql = '''SELECT * from sockets'''
 		cursor = self.conn.cursor()
 		cursor.execute(sql)
-		fetched_data = cursor.fetchall()
-		print(fetched_data)
-		for r in fetched_data:
-			print(r)
+		fetched_data = cursor.fetchall()		
 		if row and turn_on:
 			return fetched_data[row-1][1]
 		elif row and turn_off:
