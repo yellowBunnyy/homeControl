@@ -1,6 +1,6 @@
 import unittest, random, Adafruit_DHT as dht
 from logic_script import dht_handler, save_to_file
-import flask_home, os
+import flask_home, os, datetime, time
 
 
 
@@ -9,37 +9,89 @@ class Basic_tests(unittest.TestCase):
 	flask_obj = flask_home
 	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
-	# initial creating database
-	# obj_SQL_class.initial_table_in_db()
 	
-	def test_db_has_been_created(self,):
-		'''whether db has been created'''
-		# logic_script folder content
-		db_name = os.path.split(self.obj_SQL_class.STATIC_DB_ERRORS_PATH)[-1]
-		print(db_name)
-		folder_content = os.listdir(os.path.join(os.getcwd(),'logic_script'))
-		flag_if_exist = True if db_name in folder_content else False
-		self.assertTrue(flag_if_exist)
+	
+	
+	# def test_db_has_been_created(self,):
+	# 	'''whether db has been created'''		
+	# 	# initial creating database with creating tables
+	# 	# self.obj_SQL_class.initial_table_in_db()	
+	# 	db_name = os.path.split(self.obj_SQL_class.STATIC_DB_ERRORS_PATH)[-1]
+	# 	print(db_name)
+	# 	folder_content = os.listdir(os.path.join(os.getcwd(),'logic_script'))
+	# 	flag_if_exist = True if db_name in folder_content else False
+	# 	self.assertTrue(flag_if_exist)
 
-	def test_default_value_tokens_table(self):
-		answer = [0,] * 10
-		def flat_list(data):
-			container = []
-			for val in data:
-				if type(val) == int:
-					container += [val]
-				else:
-					container += flat_list(val)
-			return container
-		#list with two tuples
-		two_dimension_list = self.obj_SQL_class.fetch_data_from_tokens()
-		print(two_dimension_list)
-		flat_data = flat_list(two_dimension_list)
-		print(flat_data)
-		flag = flat_data == answer
-		print(f'{flat_data} {"==" if flag else "!="} {answer}')
-		self.assertTrue(flag)
+	# def test_default_value_tokens_table(self):
+	# 	answer = [0,] * 10
+	# 	def flat_list(data):
+	# 		container = []
+	# 		for val in data:
+	# 			if type(val) == int:
+	# 				container += [val]
+	# 			else:
+	# 				container += flat_list(val)
+	# 		return container
+	# 	#list with two tuples
+	# 	two_dimension_list = self.obj_SQL_class.fetch_data_from_tokens()
+	# 	print(two_dimension_list)
+	# 	flat_data = flat_list(two_dimension_list)
+	# 	print(flat_data)
+	# 	flag = flat_data == answer
+	# 	print(f'{flat_data} {"==" if flag else "!="} {answer}')
+	# 	self.assertTrue(flag)
 
+	# def test_correctly_inputted_data_socket_row1(self):
+	# 	answer = ['10:00','12:31']
+	# 	updata_date = tuple(answer)
+	# 	self.obj_SQL_class.update_data_in_sockets_table(times=updata_date,row_id=1)
+	# 	#list with two tuples
+	# 	row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=1)[1:]		
+	# 	is_same_flag = row_one_data == updata_date
+	# 	print(f"{row_one_data} {'==' if is_same_flag else '!=' } {updata_date}")
+	# 	self.assertTrue(is_same_flag)
+
+	# def test_correctly_inputted_data_socket_row2(self):
+	# 	answer = ['11:00','22:05']
+	# 	updata_date = tuple(answer)
+	# 	self.obj_SQL_class.update_data_in_sockets_table(times=updata_date,row_id=2)
+	# 	#list with two tuples
+	# 	row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=2)[1:]		
+	# 	is_same_flag = row_one_data == updata_date
+	# 	print(f"{row_one_data} {'==' if is_same_flag else '!=' } {updata_date}")
+	# 	self.assertTrue(is_same_flag)
+
+	def test_random_hours_and_rows(self):
+		def generate_times_tuple():			
+			gen = lambda x: str(random.choice(range(x))).zfill(2)
+			convert_to_str = lambda s: time.strptime(s, '%H:%M')
+			while True:
+				turn_on, turn_off = ['{}:{}'.format(gen(24), gen(60))
+								 for _ in range(2)]
+				obj_turn_on, obj_turn_off = [convert_to_str(t) for t in [turn_on, turn_off]]
+				if obj_turn_on < obj_turn_off:
+					# print(turn_on, turn_off)                
+					return turn_on, turn_off
+
+
+		for _ in range(100):
+			row = random.choice(range(1,3))
+			answer = generate_times_tuple()
+			# print(row)
+			self.obj_SQL_class.update_data_in_sockets_table(times=answer, row_id=row)
+			row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)[1:]
+			is_same_flag = row_one_data == answer
+			print(f"{row_one_data} {'==' if is_same_flag else '!=' } {answer}")
+			self.assertTrue(is_same_flag)
+
+
+
+
+
+
+
+		
+		
 
 
 	
