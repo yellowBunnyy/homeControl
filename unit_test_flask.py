@@ -9,13 +9,47 @@ class Basic_tests(unittest.TestCase):
 	flask_obj = flask_home
 	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
-	
-	
+
+	def initial_db_and_tables(self, amt):
+		data_from_initial = self.obj_SQL_class.initial_table_in_db(rows_amount=amt)
+		rows_amount = data_from_initial['rows_amount']
+		table_names = data_from_initial['table_names']
+		return rows_amount, table_names
+
+
+	def test_correctly_imputted_tokens_table_row1(self):
+		ans = tuple(range(1,6))
+		self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=1)
+		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=1))
+		flag = ans == fetched_data
+		print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+		self.assertTrue(flag)
+
+	def test_correctly_imputted_tokens_table_row2(self):
+		ans = tuple(range(10,15))
+		self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=2)
+		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=2))
+		flag = ans == fetched_data
+		print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+		self.assertTrue(flag)
+
+	def test_random_entered_token_values_and_rows(self):
+		n = 5
+		for _ in range(10):
+			rdm_value_in_tup = tuple(random.choices(range(-20,20), k=n))
+			rdm_row = random.choice(range(1,3))
+			self.obj_SQL_class.update_data_tokens(tokens_int=rdm_value_in_tup,
+												row_id=rdm_row)
+			fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=rdm_row))
+			flag = rdm_value_in_tup == fetched_data
+			print(f'{fetched_data} {"==" if flag else "!="} {rdm_value_in_tup}')
+			self.assertTrue(flag)
+
+
 	
 	# def test_db_has_been_created(self,):
 	# 	'''whether db has been created'''		
 	# 	# initial creating database with creating tables
-	# 	# self.obj_SQL_class.initial_table_in_db()	
 	# 	db_name = os.path.split(self.obj_SQL_class.STATIC_DB_ERRORS_PATH)[-1]
 	# 	print(db_name)
 	# 	folder_content = os.listdir(os.path.join(os.getcwd(),'logic_script'))
@@ -23,8 +57,11 @@ class Basic_tests(unittest.TestCase):
 	# 	self.assertTrue(flag_if_exist)
 
 	# def test_default_value_tokens_table(self):
-	# 	answer = [0,] * 10
+	# 	r_amt = 2
+	# 	rows, tb_names = self.initial_db_and_tables(amt=r_amt)
+	# 	answer = [0,] * (r_amt * 5)
 	# 	def flat_list(data):
+	# 		'''recur func. Flating or (vectorize) x dimension matrix'''
 	# 		container = []
 	# 		for val in data:
 	# 			if type(val) == int:
@@ -32,13 +69,11 @@ class Basic_tests(unittest.TestCase):
 	# 			else:
 	# 				container += flat_list(val)
 	# 		return container
-	# 	#list with two tuples
-	# 	two_dimension_list = self.obj_SQL_class.fetch_data_from_tokens()
-	# 	print(two_dimension_list)
-	# 	flat_data = flat_list(two_dimension_list)
-	# 	print(flat_data)
+	# 	#list with x tupels
+	# 	x_dimension_list= self.obj_SQL_class.fetch_data_from_tokens()
+	# 	flat_data = flat_list(x_dimension_list)
 	# 	flag = flat_data == answer
-	# 	print(f'{flat_data} {"==" if flag else "!="} {answer}')
+	# 	print(f'{len(flat_data)} {"==" if flag else "!="} {len(answer)}')
 	# 	self.assertTrue(flag)
 
 	# def test_correctly_inputted_data_socket_row1(self):
@@ -61,57 +96,34 @@ class Basic_tests(unittest.TestCase):
 	# 	print(f"{row_one_data} {'==' if is_same_flag else '!=' } {updata_date}")
 	# 	self.assertTrue(is_same_flag)
 
-	def test_random_hours_and_rows(self):
-		def generate_times_tuple():			
-			gen = lambda x: str(random.choice(range(x))).zfill(2)
-			convert_to_str = lambda s: time.strptime(s, '%H:%M')
-			while True:
-				turn_on, turn_off = ['{}:{}'.format(gen(24), gen(60))
-								 for _ in range(2)]
-				obj_turn_on, obj_turn_off = [convert_to_str(t) for t in [turn_on, turn_off]]
-				if obj_turn_on < obj_turn_off:
-					# print(turn_on, turn_off)                
-					return turn_on, turn_off
+	# def test_random_hours_and_rows(self):
+	# 	def generate_times_tuple():			
+	# 		gen = lambda x: str(random.choice(range(x))).zfill(2)
+	# 		convert_to_str = lambda s: time.strptime(s, '%H:%M')
+	# 		while True:
+	# 			turn_on, turn_off = ['{}:{}'.format(gen(24), gen(60))
+	# 							 for _ in range(2)]
+	# 			obj_turn_on, obj_turn_off = [convert_to_str(t) for t in [turn_on, turn_off]]
+	# 			if obj_turn_on < obj_turn_off:
+	# 				# print(turn_on, turn_off)                
+	# 				return turn_on, turn_off
 
-
-		for _ in range(100):
-			row = random.choice(range(1,3))
-			answer = generate_times_tuple()
-			# print(row)
-			self.obj_SQL_class.update_data_in_sockets_table(times=answer, row_id=row)
-			row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)[1:]
-			is_same_flag = row_one_data == answer
-			print(f"{row_one_data} {'==' if is_same_flag else '!=' } {answer}")
-			self.assertTrue(is_same_flag)
-
-
-
-
-
-
-
-		
-		
-
-
-	
-
-
-
-
-
-
-
+	# 	for _ in range(100):
+	# 		row = random.choice(range(1,3))
+	# 		answer = generate_times_tuple()
+	# 		# print(row)
+	# 		self.obj_SQL_class.update_data_in_sockets_table(times=answer, row_id=row)
+	# 		row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)[1:]
+	# 		is_same_flag = row_one_data == answer
+	# 		print(f"{row_one_data} {'==' if is_same_flag else '!=' } {answer}")
+	# 		self.assertTrue(is_same_flag)
 
 	# def test_create_db(self):
 	# 	self.obj_SQL_class.recognize_if_table_in_db_exist(
 	# 		table_name=self.table_name_sockets)
 
 	# def test_read_from_db(self):
-	# 	print(self.obj_SQL_class.read_from_db(table_name=self.table_name))
-
-		
-
+	# 	print(self.obj_SQL_class.read_from_db(table_name=self.table_name))	
 	
 
 	# SENSORS_PATH = dht_handler.p3_errors_path	
@@ -272,22 +284,7 @@ class Basic_tests(unittest.TestCase):
 	# def test_reset_tokens_in_db(self):
 	# 	self.obj_SQL_class.update_token_in_column(table_name=self.table_name,
 	# 										input_data=False,
-	# 										reset_all_tokens=self.column_names)
-		
-		
-
-
-
-
-	
-		
-		
-
-
-
-
-
-		
+	# 										reset_all_tokens=self.column_names)	
 
 
 
