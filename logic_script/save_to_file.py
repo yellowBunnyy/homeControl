@@ -233,7 +233,7 @@ class HandlerSQL(HandlerCsv):
 			print('have connetction')
 			# this var have reference to dict with key as table_name and value as
 			# list with method from SQL_Handlet class
-			# data_from_initial = self.initial_table_in_db()
+			data_from_initial = self.initial_table_in_db()
 			# self.rows_amount = data_from_initial['rows_amount']
 			# self.table_names = data_from_initial['table_names']
 
@@ -384,7 +384,7 @@ class HandlerSQL(HandlerCsv):
 		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
 																	tuple_data[-1]))
 
-	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False):
+	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.
 		row: row number.
 		turn_on: return hour in str format if true
@@ -398,9 +398,9 @@ class HandlerSQL(HandlerCsv):
 		elif row and turn_off:
 			return fetched_data[row-1][2]
 		elif row:
-			return fetched_data[row-1]
+			return fetched_data[row-1][1:]
 		else:
-			return fetched_data
+			return [tup[1:] for tup in fetched_data]
 
 
 	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False) -> (list, int):
@@ -425,6 +425,13 @@ class HandlerSQL(HandlerCsv):
 		else:
 			# tup[1:] -> remove row number
 			return [tup[1:] for tup in all_data]
+
+	def main_fetch_data_from_db(self, table_name:str):
+		method_list = [self.fetch_all_data_from_sockets,
+						self.fetch_data_from_tokens]
+		method_dict = dict(zip(self.SQL_TABELS_NAMES, method_list))
+		return method_dict[table_name]()
+		
 
 
 	
