@@ -51,7 +51,7 @@ class DHT_Handler(Container):
 	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
 		super().__init__(data_path, sensors_path, errors_path, file_obj)
 		self.SQL_obj = save_to_file.HandlerSQL()
-		self.table_name = 'errors_tokens_and_seted_temperature'	
+		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
 
 
 	def dict_with_keys_as_room_names_and_dict_as_value(self) -> dict:
