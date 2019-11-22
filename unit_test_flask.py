@@ -10,40 +10,61 @@ class Basic_tests(unittest.TestCase):
 	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
 
-	def initial_db_and_tables(self, amt):
-		data_from_initial = self.obj_SQL_class.initial_table_in_db(rows_amount=amt)
-		rows_amount = data_from_initial['rows_amount']
-		table_names = data_from_initial['table_names']
-		return rows_amount, table_names
+	# def initial_db_and_tables(self, amt):
+	# 	data_from_initial = self.obj_SQL_class.initial_table_in_db(rows_amount=amt)
+	# 	rows_amount = data_from_initial['rows_amount']
+	# 	table_names = data_from_initial['table_names']
+	# 	return rows_amount, table_names
 
+	# def test_fetch_data_sockets_withoun_rows(self,):
+	# 	tbl = obj_SQL_class.SQL_TABELS_NAMES[0] # sockets tbl
+	# 	ans = [('00:13', '19:47'),('08:10', '13:54')]
+	# 	f = main_fetch_data_from_db()
 
-	def test_correctly_imputted_tokens_table_row1(self):
-		ans = tuple(range(1,6))
-		self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=1)
-		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=1))
-		flag = ans == fetched_data
-		print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+	
+	def test_main_fetch_data(self):
+		tbl = self.obj_SQL_class.SQL_TABELS_NAMES[0]
+		ans = [('00:13', '19:47'),('08:10', '13:54')]
+		print(tbl)
+		f = self.obj_SQL_class.main_fetch_data_from_db(table_name=tbl)
+		print(f)
+		flag = ans == f
+		print(f'{f} {"==" if flag else "!="} {ans}')
 		self.assertTrue(flag)
 
-	def test_correctly_imputted_tokens_table_row2(self):
-		ans = tuple(range(10,15))
-		self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=2)
-		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=2))
-		flag = ans == fetched_data
-		print(f'{fetched_data} {"==" if flag else "!="} {ans}')
-		self.assertTrue(flag)
 
-	def test_random_entered_token_values_and_rows(self):
-		n = 5
-		for _ in range(10):
-			rdm_value_in_tup = tuple(random.choices(range(-20,20), k=n))
-			rdm_row = random.choice(range(1,3))
-			self.obj_SQL_class.update_data_tokens(tokens_int=rdm_value_in_tup,
-												row_id=rdm_row)
-			fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=rdm_row))
-			flag = rdm_value_in_tup == fetched_data
-			print(f'{fetched_data} {"==" if flag else "!="} {rdm_value_in_tup}')
-			self.assertTrue(flag)
+		
+
+
+
+	# def test_correctly_imputted_tokens_table_row1(self):
+	# 	ans = tuple(range(1,6))
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=1)
+	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=1))
+	# 	flag = ans == fetched_data
+	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
+
+	# def test_correctly_imputted_tokens_table_row2(self):
+	# 	ans = tuple(range(10,15))
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=2)
+	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=2))
+	# 	flag = ans == fetched_data
+	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
+
+	# def test_random_entered_token_values_and_rows(self):
+	# 	n = 5
+	# 	for _ in range(10):
+	# 		rdm_value_in_tup = tuple(random.choices(range(-20,20), k=n))
+	# 		rdm_row = random.choice(range(1,3))
+	# 		self.obj_SQL_class.update_data_tokens(tokens_int=rdm_value_in_tup,
+	# 											row_id=rdm_row)
+	# 		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=rdm_row))
+	# 		flag = rdm_value_in_tup == fetched_data
+	# 		print(f'{fetched_data} {"==" if flag else "!="} {rdm_value_in_tup}')
+	# 		self.assertTrue(flag)
+	
 
 
 	
@@ -113,7 +134,7 @@ class Basic_tests(unittest.TestCase):
 	# 		answer = generate_times_tuple()
 	# 		# print(row)
 	# 		self.obj_SQL_class.update_data_in_sockets_table(times=answer, row_id=row)
-	# 		row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)[1:]
+	# 		row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)
 	# 		is_same_flag = row_one_data == answer
 	# 		print(f"{row_one_data} {'==' if is_same_flag else '!=' } {answer}")
 	# 		self.assertTrue(is_same_flag)
