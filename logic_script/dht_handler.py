@@ -122,9 +122,13 @@ class DHT_Handler(Container):
 		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
 		 
 		def remove_token_error(sensor_name:str):
-			'''This method remove all tokens from sensor when reads is OK'''			
-			self.SQL_obj.update_token_in_column(table_name=self.table_name, 
-												input_data={sensor_name:0})
+			'''This method remove all tokens from sensor when reads is OK'''
+			# below var have ref to sensor_names as key and token int as value
+			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)			
+			tokens_int = tuple(0 if room_name == sensor_name else val 
+								for room_name, val in dict_obj.items())						
+			self.SQL_obj.update_data_tokens(tokens_int=tokens_int, 
+												row=1)
 			print(f'all tokens was remove from {sensor_name}')			
 
 
@@ -132,11 +136,23 @@ class DHT_Handler(Container):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
 
 			# this -> int_token_from_db variable represen how much we have tokens in sensor
-			int_token_from_db = self.SQL_obj.fetch_token_int_from_column(
-										table_name=self.table_name, 
-										column_name=sensor_name) + 1			
-			self.SQL_obj.update_token_in_column(table_name=self.table_name,
-												input_data={sensor_name:int_token_from_db})			
+			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)
+			# val + 1 increment token value
+			# tokens_int = tuple(val + 1 if room_name == sensor_name else val 
+			# 					for room_name, val in dict_obj.items())
+
+			tokens_int = ()
+			for room_name, val in dict_obj.items():
+				# print(room_name, val)
+				if room_name == sensor_name:
+					val += 1
+					tokens_int += (val,)
+					int_token_from_db = val
+				else:
+					tokens_int += (val,)
+			 
+			self.SQL_obj.update_data_tokens(tokens_int=tokens_int,
+												row=1)			
 			print(f'Token was added to {sensor_name} token info {int_token_from_db}!!')				
 			if int_token_from_db >=10:
 				print(f'błąd w {sensor_name}!!!!!!!')				
