@@ -79,7 +79,6 @@ def set_time_request_handling():
 	We use here dht_handler_obj instead save_to_file_obj because there we
 	have variable which have reference to HandlerSQL. So is useless to create new
 	reference.'''
-	
 	# Check if table exist.
 	# True if does not existance otherwise False	
 	if SQL_obj.recognize_if_table_in_db_exist(table_name=SOCKETS_TABLE):
@@ -165,14 +164,14 @@ def update_temp():
 	container = dht_handler_obj.update()    
 	return 'data was update!! {0}'.format(container)
 
-@app.route('/dbupdate', methods=['GET'])
-def update_db_file():	
-	if request.method == 'GET':		
-		table_name = dht_handler_obj.table_name
-		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
-		dict_data = dict(zip(SQL_obj.fetch_column_names(table_name=table_name), 
-						SQL_obj.read_from_db(table_name=table_name)))
-		print(dict_data)				
+@app.route('/tokensupdate', methods=['GET'])
+def update_tokens_in_db_file():	
+	if request.method == 'GET':
+		table_name = dht_handler_obj.table_name # tokens_table
+		# in below var (dict_data) we have dict with room_name as key and val as token_intereg
+		colum_names = SQL_obj.fetch_column_names(table_name=table_name)[1:]# without id
+		dict_data = dict(zip(colum_names,
+						SQL_obj.main_fetch_data_from_db(table_name=table_name,row=1)))						
 		json_data_to_server_as_response = json.dumps(dict_data)
 		return json_data_to_server_as_response
 	else:
