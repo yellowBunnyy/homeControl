@@ -22,15 +22,15 @@ class Basic_tests(unittest.TestCase):
 	# 	f = main_fetch_data_from_db()
 
 	
-	def test_main_fetch_data(self):
-		tbl = self.obj_SQL_class.SQL_TABELS_NAMES[0]
-		ans = [('00:13', '19:47'),('08:10', '13:54')]
-		print(tbl)
-		f = self.obj_SQL_class.main_fetch_data_from_db(table_name=tbl)
-		print(f)
-		flag = ans == f
-		print(f'{f} {"==" if flag else "!="} {ans}')
-		self.assertTrue(flag)
+	# def test_main_fetch_data(self):
+	# 	tbl = self.obj_SQL_class.SQL_TABELS_NAMES[0]
+	# 	ans = [('00:13', '19:47'),('08:10', '13:54')]
+	# 	print(tbl)
+	# 	f = self.obj_SQL_class.main_fetch_data_from_db(table_name=tbl)
+	# 	print(f)
+	# 	flag = ans == f
+	# 	print(f'{f} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
 
 
 		
@@ -39,7 +39,7 @@ class Basic_tests(unittest.TestCase):
 
 	# def test_correctly_imputted_tokens_table_row1(self):
 	# 	ans = tuple(range(1,6))
-	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=1)
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row=1)
 	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=1))
 	# 	flag = ans == fetched_data
 	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
@@ -47,7 +47,7 @@ class Basic_tests(unittest.TestCase):
 
 	# def test_correctly_imputted_tokens_table_row2(self):
 	# 	ans = tuple(range(10,15))
-	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row_id=2)
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row=2)
 	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=2))
 	# 	flag = ans == fetched_data
 	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
@@ -59,7 +59,7 @@ class Basic_tests(unittest.TestCase):
 	# 		rdm_value_in_tup = tuple(random.choices(range(-20,20), k=n))
 	# 		rdm_row = random.choice(range(1,3))
 	# 		self.obj_SQL_class.update_data_tokens(tokens_int=rdm_value_in_tup,
-	# 											row_id=rdm_row)
+	# 											row=rdm_row)
 	# 		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=rdm_row))
 	# 		flag = rdm_value_in_tup == fetched_data
 	# 		print(f'{fetched_data} {"==" if flag else "!="} {rdm_value_in_tup}')
