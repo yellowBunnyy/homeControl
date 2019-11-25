@@ -148,7 +148,7 @@ function clean_error_status(sensor_errors){
 	
 function read_from_db_file(){	
 	var connection = new XMLHttpRequest();
-	connection.open('GET','/dbupdate');		
+	connection.open('GET','/tokensupdate');		
 	// paremetr 'load' odpowiada za typ nasłuchu w tym przypadku po załadowaniu strony
 	// wykona się zdarzenie
 	connection.addEventListener('load', function(){		
