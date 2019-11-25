@@ -349,28 +349,28 @@ class HandlerSQL(HandlerCsv):
 		last_row = cursor.lastrowid
 		return last_row
 
-	def update_data_in_sockets_table(self, times:tuple, row_id:int):
+	def update_data_in_sockets_table(self, times:tuple, row:int):
 		'''This method updates data in sockets table
 		times: tuple with seted hours in str format
 		row_id: row int format to update'''
 		# varible contain times in str and row id in int
-		times += (row_id,)		
+		times += (row,)		
 		sql = '''UPDATE sockets SET
 				turn_on = ?,
 				turn_off = ?
 				WHERE id = ?'''
 		cursor = self.conn.cursor()
-		print('data was update in db {}'.format(times))
+		print('data was update in db {} in row {}'.format(times, str(row)))
 		cursor.execute(sql,tuple(times))
 		self.conn.commit()
 		# add somewhere method for prevent when we put does not existing row
 
 
-	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row_id:int=False):
+	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
 		'''Update data in table with tokens and temerature.
 			tokens_int: tuple with tokens int's.
 			temperature_int: tuple with seted temperature on haters in int format'''
-		tuple_data = tokens_int + (row_id,) if tokens_int else temperature_int + (row_id,)
+		tuple_data = tokens_int + (row,) if tokens_int else temperature_int + (row,)
 		sql = '''UPDATE errors_tokens_and_seted_temperature SET
 						salon = ?,
 						maly_pokoj = ?,
@@ -403,21 +403,23 @@ class HandlerSQL(HandlerCsv):
 			return [tup[1:] for tup in fetched_data]
 
 
-	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False) -> (list, int):
+	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
 		'''Fetch all data from error_tokens_and... table'''
 		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
 		cursor = self.conn.cursor()
 		cursor.execute(sql)
 		all_data = cursor.fetchall()
 		# print(all_data)
-		if row:
+		if row:			
 			# dict obj with room names as key and tokens or temperature as values
-			dic_obj = dict(zip(["salon","maly_pokoj","kuchnia","WC","outside"], all_data[row - 1]))
+			dict_obj = dict(zip(["salon","maly_pokoj","kuchnia","WC","outside"], all_data[row - 1][1:]))
 			# print(dic_obj)
 			if room_name:
 				# return int
-				return dic_obj[room_name]
+				return dict_obj[room_name]
 			#return list
+			elif show_dict:
+				return dict_obj
 			return all_data[row-1][1:]
 		#return list
 		if with_id:
@@ -426,11 +428,11 @@ class HandlerSQL(HandlerCsv):
 			# tup[1:] -> remove row number
 			return [tup[1:] for tup in all_data]
 
-	def main_fetch_data_from_db(self, table_name:str):
+	def main_fetch_data_from_db(self, table_name:str, row=False):
 		method_list = [self.fetch_all_data_from_sockets,
 						self.fetch_data_from_tokens]
 		method_dict = dict(zip(self.SQL_TABELS_NAMES, method_list))
-		return method_dict[table_name]()
+		return method_dict[table_name](row)
 		
 
 
