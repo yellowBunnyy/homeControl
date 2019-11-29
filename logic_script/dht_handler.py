@@ -1,5 +1,5 @@
 import time, sys, os, Adafruit_DHT as dht
-from logic_script import save_to_file, virtual_relay
+from logic_script import save_to_file
 from time import sleep
 ##################fast get to paths######################### 
 p1_data = save_to_file.HandlerFile().STATIC_PATH
