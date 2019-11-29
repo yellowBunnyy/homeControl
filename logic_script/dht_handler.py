@@ -1,6 +1,5 @@
-
 import time, sys, os, Adafruit_DHT as dht
-from logic_script import save_to_file, virtual_relay
+from logic_script import save_to_file
 from time import sleep
 ##################fast get to paths######################### 
 p1_data = save_to_file.HandlerFile().STATIC_PATH
@@ -52,7 +51,7 @@ class DHT_Handler(Container):
 	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
 		super().__init__(data_path, sensors_path, errors_path, file_obj)
 		self.SQL_obj = save_to_file.HandlerSQL()
-		self.table_name = 'errors_tokens'	
+		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
 
 
 	def dict_with_keys_as_room_names_and_dict_as_value(self) -> dict:
@@ -123,9 +122,13 @@ class DHT_Handler(Container):
 		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
 		 
 		def remove_token_error(sensor_name:str):
-			'''This method remove all tokens from sensor when reads is OK'''			
-			self.SQL_obj.update_token_in_column(table_name=self.table_name, 
-												input_data={sensor_name:0})
+			'''This method remove all tokens from sensor when reads is OK'''
+			# below var have ref to sensor_names as key and token int as value
+			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)			
+			tokens_int = tuple(0 if room_name == sensor_name else val 
+								for room_name, val in dict_obj.items())						
+			self.SQL_obj.update_data_tokens(tokens_int=tokens_int, 
+												row=1)
 			print(f'all tokens was remove from {sensor_name}')			
 
 
@@ -133,11 +136,23 @@ class DHT_Handler(Container):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
 
 			# this -> int_token_from_db variable represen how much we have tokens in sensor
-			int_token_from_db = self.SQL_obj.fetch_token_int_from_column(
-										table_name=self.table_name, 
-										column_name=sensor_name) + 1			
-			self.SQL_obj.update_token_in_column(table_name=self.table_name,
-												input_data={sensor_name:int_token_from_db})			
+			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)
+			# val + 1 increment token value
+			# tokens_int = tuple(val + 1 if room_name == sensor_name else val 
+			# 					for room_name, val in dict_obj.items())
+
+			tokens_int = ()
+			for room_name, val in dict_obj.items():
+				# print(room_name, val)
+				if room_name == sensor_name:
+					val += 1
+					tokens_int += (val,)
+					int_token_from_db = val
+				else:
+					tokens_int += (val,)
+			 
+			self.SQL_obj.update_data_tokens(tokens_int=tokens_int,
+												row=1)			
 			print(f'Token was added to {sensor_name} token info {int_token_from_db}!!')				
 			if int_token_from_db >=10:
 				print(f'błąd w {sensor_name}!!!!!!!')				
@@ -161,14 +176,13 @@ class DHT_Handler(Container):
 			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
 			in main data file saved in .json '''
-			
-		columns = [col_room_name for col_room_name, pin in self.names_container_default.items()]		
-		if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
-			self.SQL_obj.create_table(table_name=self.table_name, columns=columns)
-		# here we set all tokens on 0.
-			self.SQL_obj.save_data_to_db(data=tuple([0 for _ in range(len(columns))]),
-												table_name=self.table_name)
-		
+							
+		# if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
+		# 	self.SQL_obj.create_table(
+		# 		table_sheet=SQL_obj.table_errors_tokens_and_seted_temperature())
+		# # here we set all tokens on 0.
+		# 	self.SQL_obj.insert_data_token_table(
+		# 		tokens_int=tuple(0 for _ in self.names_container_default))		
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		return container
 

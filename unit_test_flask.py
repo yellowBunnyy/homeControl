@@ -1,20 +1,154 @@
 import unittest, random, Adafruit_DHT as dht
-from logic_script import dht_handler
-from logic_script import save_to_file
+from logic_script import dht_handler, save_to_file
+import flask_home, os, datetime, time
 
 
 
 class Basic_tests(unittest.TestCase):
    # obj_convert_test = convert_time.TimeConvertet()
-	obj_dht_handler = dht_handler.DHT_Handler()
+	flask_obj = flask_home
+	obj_dht_handler = flask_obj.dht_handler_obj
+	obj_SQL_class = obj_dht_handler.SQL_obj
+
+	# def initial_db_and_tables(self, amt):
+	# 	data_from_initial = self.obj_SQL_class.initial_table_in_db(rows_amount=amt)
+	# 	rows_amount = data_from_initial['rows_amount']
+	# 	table_names = data_from_initial['table_names']
+	# 	return rows_amount, table_names
+
+	# def test_fetch_data_sockets_withoun_rows(self,):
+	# 	tbl = obj_SQL_class.SQL_TABELS_NAMES[0] # sockets tbl
+	# 	ans = [('00:13', '19:47'),('08:10', '13:54')]
+	# 	f = main_fetch_data_from_db()
+
+	
+	# def test_main_fetch_data(self):
+	# 	tbl = self.obj_SQL_class.SQL_TABELS_NAMES[0]
+	# 	ans = [('00:13', '19:47'),('08:10', '13:54')]
+	# 	print(tbl)
+	# 	f = self.obj_SQL_class.main_fetch_data_from_db(table_name=tbl)
+	# 	print(f)
+	# 	flag = ans == f
+	# 	print(f'{f} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
+
+
+		
+
+
+
+	# def test_correctly_imputted_tokens_table_row1(self):
+	# 	ans = tuple(range(1,6))
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row=1)
+	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=1))
+	# 	flag = ans == fetched_data
+	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
+
+	# def test_correctly_imputted_tokens_table_row2(self):
+	# 	ans = tuple(range(10,15))
+	# 	self.obj_SQL_class.update_data_tokens(tokens_int=ans, row=2)
+	# 	fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=2))
+	# 	flag = ans == fetched_data
+	# 	print(f'{fetched_data} {"==" if flag else "!="} {ans}')
+	# 	self.assertTrue(flag)
+
+	# def test_random_entered_token_values_and_rows(self):
+	# 	n = 5
+	# 	for _ in range(10):
+	# 		rdm_value_in_tup = tuple(random.choices(range(-20,20), k=n))
+	# 		rdm_row = random.choice(range(1,3))
+	# 		self.obj_SQL_class.update_data_tokens(tokens_int=rdm_value_in_tup,
+	# 											row=rdm_row)
+	# 		fetched_data = tuple(self.obj_SQL_class.fetch_data_from_tokens(row=rdm_row))
+	# 		flag = rdm_value_in_tup == fetched_data
+	# 		print(f'{fetched_data} {"==" if flag else "!="} {rdm_value_in_tup}')
+	# 		self.assertTrue(flag)
 	
 
-	obj_SQL_class = save_to_file.HandlerSQL()	
-	table_name = dht_handler.DHT_Handler().table_name
+
+	
+	# def test_db_has_been_created(self,):
+	# 	'''whether db has been created'''		
+	# 	# initial creating database with creating tables
+	# 	db_name = os.path.split(self.obj_SQL_class.STATIC_DB_ERRORS_PATH)[-1]
+	# 	print(db_name)
+	# 	folder_content = os.listdir(os.path.join(os.getcwd(),'logic_script'))
+	# 	flag_if_exist = True if db_name in folder_content else False
+	# 	self.assertTrue(flag_if_exist)
+
+	# def test_default_value_tokens_table(self):
+	# 	r_amt = 2
+	# 	rows, tb_names = self.initial_db_and_tables(amt=r_amt)
+	# 	answer = [0,] * (r_amt * 5)
+	# 	def flat_list(data):
+	# 		'''recur func. Flating or (vectorize) x dimension matrix'''
+	# 		container = []
+	# 		for val in data:
+	# 			if type(val) == int:
+	# 				container += [val]
+	# 			else:
+	# 				container += flat_list(val)
+	# 		return container
+	# 	#list with x tupels
+	# 	x_dimension_list= self.obj_SQL_class.fetch_data_from_tokens()
+	# 	flat_data = flat_list(x_dimension_list)
+	# 	flag = flat_data == answer
+	# 	print(f'{len(flat_data)} {"==" if flag else "!="} {len(answer)}')
+	# 	self.assertTrue(flag)
+
+	# def test_correctly_inputted_data_socket_row1(self):
+	# 	answer = ['10:00','12:31']
+	# 	updata_date = tuple(answer)
+	# 	self.obj_SQL_class.update_data_in_sockets_table(times=updata_date,row_id=1)
+	# 	#list with two tuples
+	# 	row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=1)[1:]		
+	# 	is_same_flag = row_one_data == updata_date
+	# 	print(f"{row_one_data} {'==' if is_same_flag else '!=' } {updata_date}")
+	# 	self.assertTrue(is_same_flag)
+
+	# def test_correctly_inputted_data_socket_row2(self):
+	# 	answer = ['11:00','22:05']
+	# 	updata_date = tuple(answer)
+	# 	self.obj_SQL_class.update_data_in_sockets_table(times=updata_date,row_id=2)
+	# 	#list with two tuples
+	# 	row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=2)[1:]		
+	# 	is_same_flag = row_one_data == updata_date
+	# 	print(f"{row_one_data} {'==' if is_same_flag else '!=' } {updata_date}")
+	# 	self.assertTrue(is_same_flag)
+
+	# def test_random_hours_and_rows(self):
+	# 	def generate_times_tuple():			
+	# 		gen = lambda x: str(random.choice(range(x))).zfill(2)
+	# 		convert_to_str = lambda s: time.strptime(s, '%H:%M')
+	# 		while True:
+	# 			turn_on, turn_off = ['{}:{}'.format(gen(24), gen(60))
+	# 							 for _ in range(2)]
+	# 			obj_turn_on, obj_turn_off = [convert_to_str(t) for t in [turn_on, turn_off]]
+	# 			if obj_turn_on < obj_turn_off:
+	# 				# print(turn_on, turn_off)                
+	# 				return turn_on, turn_off
+
+	# 	for _ in range(100):
+	# 		row = random.choice(range(1,3))
+	# 		answer = generate_times_tuple()
+	# 		# print(row)
+	# 		self.obj_SQL_class.update_data_in_sockets_table(times=answer, row_id=row)
+	# 		row_one_data = self.obj_SQL_class.fetch_all_data_from_sockets(row=row)
+	# 		is_same_flag = row_one_data == answer
+	# 		print(f"{row_one_data} {'==' if is_same_flag else '!=' } {answer}")
+	# 		self.assertTrue(is_same_flag)
+
+	# def test_create_db(self):
+	# 	self.obj_SQL_class.recognize_if_table_in_db_exist(
+	# 		table_name=self.table_name_sockets)
+
+	# def test_read_from_db(self):
+	# 	print(self.obj_SQL_class.read_from_db(table_name=self.table_name))	
 	
 
-	SENSORS_PATH = dht_handler.p3_errors_path	
-	folder = 'logic_script'
+	# SENSORS_PATH = dht_handler.p3_errors_path	
+	# folder = 'logic_script'
 
 	# time convert tests
 	# def test_convert_test_normal(self):
@@ -147,10 +281,10 @@ class Basic_tests(unittest.TestCase):
 	# 		folder=self.folder))
 	# def test_read_data_from_db(self):
 	# 	self.obj_SQL_class.read_from_db(table_name=self.table_name)
-	column_names = [col for col, var in \
-						obj_dht_handler.names_container_default.items()]
-	data_to_update = list(100 + i for i in range(len(column_names)))
-	reset_tokens = list(0 for _ in range(len(column_names)))
+	# column_names = [col for col, var in \
+	# 					obj_dht_handler.names_container_default.items()]
+	# data_to_update = list(100 + i for i in range(len(column_names)))
+	# reset_tokens = list(0 for _ in range(len(column_names)))
 
 	# def test_update_single_col_in_db(self):		
 	# 	for col, int_data in zip(self.column_names, self.data_to_update):
@@ -160,30 +294,18 @@ class Basic_tests(unittest.TestCase):
 	# 													input_data=dict_data)
 		 
 
-	def test_fetch_data_from_db(self):		
-		for single_col, int_data in zip(self.column_names, self.reset_tokens):
-			print(f'column name --> {single_col}')			
-			fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
-							table_name=self.table_name,
-							column_name=single_col)
-			self.assertEqual(fetched_data, int_data, f'should be {int_data} is -=>{fetched_data}')
+	# def test_fetch_data_from_db(self):		
+	# 	for single_col, int_data in zip(self.column_names, self.reset_tokens):
+	# 		print(f'column name --> {single_col}')			
+	# 		fetched_data = self.obj_SQL_class.fetch_token_int_from_column(
+	# 						table_name=self.table_name,
+	# 						column_name=single_col)
+	# 		self.assertEqual(fetched_data, int_data, f'should be {int_data} is -=>{fetched_data}')
 			
 	# def test_reset_tokens_in_db(self):
 	# 	self.obj_SQL_class.update_token_in_column(table_name=self.table_name,
 	# 										input_data=False,
-	# 										reset_all_tokens=self.column_names)
-		
-		
-
-
-
-		
-
-
-
-
-
-		
+	# 										reset_all_tokens=self.column_names)	
 
 
 

@@ -6,24 +6,24 @@ from logic_script import virtual_relay, save_to_file, dht_handler
 app = Flask(__name__)
 print(os.getcwd())
 TEMP_KEY = 'temps'
-SOCKETS_KEY = 'sockets'
+SOCKETS_TABLE = 'sockets_table'
 SENSOR_ERRORS = 'sensor_errors'
 save_to_file_obj = save_to_file.HandlerFile()
-virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
 DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
 ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
-DB_ERRORS_PATH = save_to_file_obj.STATIC_DB_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
 		sensors_path= SENSOR_PATH,
 		errors_path = ERRORS_PATH,		
 		file_obj=save_to_file_obj)
-
-
+SQL_obj = dht_handler_obj.SQL_obj
+virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj, 
+												SQL_obj=SQL_obj)
 #create container to data
 print(save_to_file_obj.create_container(DATA_PATH))
+
 
 class MyExceptions(Exception):
 	pass
@@ -75,37 +75,53 @@ def lighting_relays_loader():
 @app.route('/settimeSockets', methods = ['POST', 'GET'])
 def set_time_request_handling():
 	'''function handel request for site. In this case handle a seted time from user and save it to .json file,
-	if it is a POST methode othewise send to site response'''
+	if it is a POST methode othewise send to site response.
+	We use here dht_handler_obj instead save_to_file_obj because there we
+	have variable which have reference to HandlerSQL. So is useless to create new
+	reference.'''	
 	# POST
-	if request.method == 'POST':		
-		data = json.loads(request.data)
-		# save data to file
-		save_to_file_obj.update_file(DATA_PATH, 'sockets', data)
+	if request.method == 'POST':
+		# fetch data from site and decode to dict object		
+		data = json.loads(request.data)			
+		# times in string ON and Off received from site
+		tup_data = tuple(data.values())		
+		SQL_obj.update_data_in_sockets_table(times=tup_data, row=1)		
 		return 'OK'
 	# GET
-	else:       
-		data = json.dumps(save_to_file_obj.load_from_json(DATA_PATH,'sockets'))		
-		return data
+	else:		
+		fetched_times_tuple = SQL_obj.fetch_all_data_from_sockets(row=1)
+		data_to_send = dict(zip(['ON','OFF'], fetched_times_tuple))		
+		db_data = json.dumps(data_to_send)		
+		return db_data
 
 @app.route('/settimeHeat', methods=['POST', 'GET'])
 def set_time_heat():        
-	if request.method == 'POST':		                
-		data = json.loads(request.data)		
-		save_to_file_obj.update_file(DATA_PATH, 'heat_switch', data)
+	if request.method == 'POST':
+		# times recived from site converted to dict.		                
+		data = json.loads(request.data)			
+		SQL_obj.update_data_in_sockets_table(times=tuple(data.values()),
+											row=2) # heaters		
 		return 'ok'
-	else:				
-		data = save_to_file_obj.load_from_json(DATA_PATH, 'heat_switch')		
-		return json.dumps(data)
+	else:		
+		fetched_data = SQL_obj.fetch_all_data_from_sockets(row=2) # heaters switch		
+		data_from_db = dict(zip(['ON','OFF'], fetched_data))					
+		return json.dumps(data_from_db)
 
 @app.route('/settempHeat', methods=['POST', 'GET'])
 def set_temp_heat():
 	if request.method == 'POST':
-		data = json.loads(request.data)		
-		save_to_file_obj.update_file(DATA_PATH, 'heats', data)
+		data = json.loads(request.data)				
+		# with wc and outside but values are setet to 0 
+		tokens_int = tuple(data.values()) + (0,0,)
+		SQL_obj.update_data_tokens(temperature_int=tokens_int, row=2)# heaters temperature set		
 		return 'ok'
-	else:		
-		data = save_to_file_obj.load_from_json(DATA_PATH, 'heats')		        
-		return json.dumps(data)
+	else:
+		to_remove = ["WC", "outside"]		
+		data_db = SQL_obj.fetch_data_from_tokens(row=2, show_dict=True)		
+		# dict with rooms
+		data_to_send = {room: val for room, val in data_db.items() 
+						if room not in to_remove}				        
+		return json.dumps(data_to_send)
 
 
 @app.route('/current', methods=['POST', 'GET'])
@@ -135,15 +151,14 @@ def update_temp():
 	container = dht_handler_obj.update()    
 	return 'data was update!! {0}'.format(container)
 
-@app.route('/dbupdate', methods=['GET'])
-def update_db_file():	
-	if request.method == 'GET':			
-		SQL_obj = dht_handler_obj.SQL_obj
-		table_name = dht_handler_obj.table_name
-		# in below var (dict_data) we have dict with room_name as key and val as token_intereg 
-		dict_data = dict(zip(SQL_obj.fetch_column_names(table_name=table_name), 
-						SQL_obj.read_from_db(table_name=table_name)))
-		print(dict_data)				
+@app.route('/tokensupdate', methods=['GET'])
+def update_tokens_in_db_file():	
+	if request.method == 'GET':
+		table_name = dht_handler_obj.table_name # tokens_table
+		# in below var (dict_data) we have dict with room_name as key and val as token_intereg
+		colum_names = SQL_obj.fetch_column_names(table_name=table_name)[1:]# without id
+		dict_data = dict(zip(colum_names,
+						SQL_obj.main_fetch_data_from_db(table_name=table_name,row=1)))						
 		json_data_to_server_as_response = json.dumps(dict_data)
 		return json_data_to_server_as_response
 	else:

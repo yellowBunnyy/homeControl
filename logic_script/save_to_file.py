@@ -1,5 +1,4 @@
 import os, json, sys, datetime, csv, sqlite3
-
 os.chdir('/home/pi/Desktop/env/fl/src')
 print(os.getcwd())
 
@@ -52,7 +51,9 @@ class HandlerFile():
 				# print('data was load with key {}'.format(content[key]))
 				return content[key]
 			except KeyError:
-				raise MyExceptions(f'Brak klucza w load from json PATH --> {path}')
+				print(f'klucz do content == {key}')
+				raise MyExceptions(f'Brak klucza w load from \
+					json PATH klucz do content {key} --> {path}')
 		else:
 			# print('data was load without key {}'.format(content))
 			return content
@@ -216,6 +217,9 @@ class HandlerSQL(HandlerCsv):
 	'''DISCRIPTION:
 		this class handle everything what is related with operations 
 		on data bases'''
+	SQL_TABELS_NAMES = [
+	'sockets', 
+	'errors_tokens_and_seted_temperature',]
 
 	def __init__(self):
 		'''Here we initial conection to database and create
@@ -229,46 +233,46 @@ class HandlerSQL(HandlerCsv):
 			self.conn = sqlite3.connect(db_file, check_same_thread=False)
 			self.c = self.conn.cursor()
 			print('have connetction')
+			# this var have reference to dict with key as table_name and value as
+			# list with method from SQL_Handlet class
+			data_from_initial = self.initial_table_in_db()
+			# self.rows_amount = data_from_initial['rows_amount']
+			# self.table_names = data_from_initial['table_names']
 
-	def close_db(self):
-		# close db
-		self.conn.close()
-
-	def create_table(self, table_name:str, columns:(tuple,list)):
-		'''Create table in data base'''
-		# create new table
-		# print(','.join(name_col for name_col in columns))
-		self.c.execute('''CREATE TABLE {}
-				   ({})'''.format(table_name, ','.join(name_col for name_col in columns)))
-		print('table was created --> {}'.format(table_name))
-
-	def save_data_to_db(self, data:tuple, table_name:str):
-		# this condition create table in db if dose not exist
-		# if self.recognize_if_table_in_db_exist(table_name=table_name):
-		# 	self.create_table(table_name=table_name, columns=comumns)
-		if type(data) != tuple:
-			raise MyErrors('wrong data format!! allowed only tuple!!')
-		else:
-			self.c.execute('''INSERT INTO {} VALUES ({})
-				 '''.format(table_name, ','.join('?' * len(data))), data)
-			print('data was saved --> {}'.format(data))
-			self.conn.commit()
-			print('was commited')
-			# self.close_db()
-			# print('db was closed')	
 			
+	def initial_table_in_db(self, add_default_value:bool=True, rows_amount:int=2) -> dict:
+		'''Here we initial all tabels in data base.
+		add_default_value: initial default value in tabels if this argument is true
+		otherwise return list which contain table names as string '''
 
-	def read_from_db(self, table_name:str) -> tuple:
-		'''this method read one row of table and return values in tuple'''				
-		return [var for var in self.c.execute('''SELECT * FROM {}'''.format(table_name))][0]
+		SQL_dict = {
+		self.SQL_TABELS_NAMES[0]: [self.table_sockets,
+					self.insert_data_to_sockets_table,
+					('00:00','00:00')], 
+		self.SQL_TABELS_NAMES[1]: 
+						[self.table_errors_tokens_and_seted_temperature,
+						self.insert_data_token_table,
+						(0,0,0,0,0)],
+		}		
+		if add_default_value:
+			# varible object represent list content			
+			for table_name, objects in SQL_dict.items():				
+				if self.recognize_if_table_in_db_exist(table_name=table_name):
+					table_sheet, insert_data_method, default_values = objects
+					self.create_table(
+							table_sheet=table_sheet())		
+					# insert two to rows in one table
+					for _ in range(rows_amount):
+						insert_data_method(default_values)
+				else:
+					print(f'table {table_name} EXISTS')
+			else:
+				return {'rows_amount':rows_amount,
+					 	'table_names': list(SQL_dict.keys()),
+					 	}		
+		
+		
 
-	def create_random_input_data(self, no_col):
-		date, hour = datetime.datetime.now().strftime('%d-%m-%Y,%H:%M').split(',')
-		if no_col > 2:
-			t = tuple(random.choices(range(-20, 35), k=no_col - 2))
-			return (date, hour) + t
-		else:
-			raise MyErrors('not enough columns no_col > 2')
 
 	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
 		'''Recognizon if table is in data base. If is return false
@@ -282,39 +286,160 @@ class HandlerSQL(HandlerCsv):
 			print('db does not exist --> flag: true')
 			return True
 
-	def update_token_in_column(self, table_name:str, input_data:(dict, bool) = False, reset_all_tokens:list = False):
-		'''Update value in single column in table, key as room name val as token int 
-		e.g ('salon': 1) are a dictionary'''
-		# reset all tokens in columns       
-		if reset_all_tokens and input_data == False:
-			for column in reset_all_tokens:
-				print(table_name, column, 0)
-				self.c.execute('''UPDATE {} SET {} = {}'''.format(
-														table_name,
-														column,
-														0))
-		#set token in column
-		else:			
-			return_key_or_value_form_dict = lambda dic_t, value=None: list(dic_t.values())[-1] if value else list(dic_t.keys())[-1]        	
-			# print(table_name, return_key_or_value_form_dict(dic_t=input_data), 
-			# 	return_key_or_value_form_dict(dic_t=input_data,value=True),'in update_token_in_column')
-			self.c.execute('''UPDATE {} SET {} = {}'''.format(
-															table_name,
-															return_key_or_value_form_dict(dic_t=input_data),
-															return_key_or_value_form_dict(dic_t=input_data, value=True)))
-		self.conn.commit()
-
-	def fetch_token_int_from_column(self, table_name:str, column_name:str) -> int:
-		'''fetch token as integer from data base and return that integer'''
-		db_data = self.c.execute('''SELECT {} FROM {}'''.format(column_name, table_name))
-		fetched_data = db_data.fetchone()
-		print(fetched_data, table_name, column_name)		
-		return fetched_data[-1]
-
 	def fetch_column_names(self, table_name:str)-> list:
 		'''This method fetch comumns names and return them in list'''
 		column_list = self.c.execute(f'''SELECT * from {table_name}''')
 		return [row[0] for row in column_list.description]
+
+	def table_sockets(self,)-> tuple:
+		'''Table sheet for table sockets
+		return: tuple with table name and sql sheet'''        
+		sql = '''CREATE TABLE IF NOT EXISTS sockets (
+				id integer PRIMARY KEY,
+				turn_on text,
+				turn_off text);
+		'''
+		return self.SQL_TABELS_NAMES[0], sql
+
+	def table_errors_tokens_and_seted_temperature(self) -> tuple:
+		'''Table sheet for table with errors tokens
+		and seted temperature on heaters
+		return: tuple with table name and sql sheet'''        
+		sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+		return self.SQL_TABELS_NAMES[1], sql
+
+	def create_table(self, table_sheet:tuple):
+		'''Create table in data base. Where first value in tuple is table name
+		second are sql sheet to create table'''
+		# create new table
+		cursor = self.conn.cursor()
+		cursor.execute(table_sheet[1])
+		print('table was created --> {}'.format(table_sheet[0]))
+
+	def insert_data_to_sockets_table(self, times:tuple) -> int:
+		'''return last row in int'''
+		sql = '''INSERT INTO sockets (
+				turn_on, turn_off)
+				VALUES(?,?)'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql, times)
+		self.conn.commit()
+		print(f'data was added {times}')
+		last_row = cursor.lastrowid
+		return last_row
+
+	def insert_data_token_table(self, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
+		'''Insert to table in data base tuple with tokens_int or tuple with value ints
+		seted temperature return last row in int'''
+		sql = '''INSERT INTO errors_tokens_and_seted_temperature (
+				salon,
+				maly_pokoj,
+				kuchnia,
+				WC,
+				outside)
+				VALUES (?,?,?,?,?)'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql, tokens_int if tokens_int else seted_temperature)
+		self.conn.commit()
+		print(f'data was added {tokens_int if tokens_int else seted_temperature}')
+		last_row = cursor.lastrowid
+		return last_row
+
+	def update_data_in_sockets_table(self, times:tuple, row:int):
+		'''This method updates data in sockets table
+		times: tuple with seted hours in str format
+		row_id: row int format to update'''
+		# varible contain times in str and row id in int
+		times += (row,)		
+		sql = '''UPDATE sockets SET
+				turn_on = ?,
+				turn_off = ?
+				WHERE id = ?'''
+		cursor = self.conn.cursor()
+		row_explanation = {1 : 'sockets', 2: 'heaters_switch'}
+		print('data was update in socket table {} in row {}'.format(times[:-1], 
+													row_explanation[row]))
+		cursor.execute(sql,tuple(times))
+		self.conn.commit()
+		# add somewhere method for prevent when we put does not existing row
+
+
+	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
+		'''Update data in table with tokens and temerature.
+			tokens_int: tuple with tokens int's.
+			temperature_int: tuple with seted temperature on haters in int format'''
+		tuple_data = tokens_int + (row,) if tokens_int else temperature_int + (row,)
+		sql = '''UPDATE errors_tokens_and_seted_temperature SET
+						salon = ?,
+						maly_pokoj = ?,
+						kuchnia = ?,
+						WC = ?,
+						outside = ?
+						WHERE id = ?'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql, tuple_data)
+		# without last one (in this case row no.)		
+		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
+														tuple_data[-1]))
+		self.conn.commit()
+		
+	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
+		'''Fetch all data from socket table.
+		row: row number.
+		turn_on: return hour in str format if true
+		turn_off: return hour in str format if true'''
+		sql = '''SELECT * from sockets'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql)
+		fetched_data = cursor.fetchall()		
+		if row and turn_on:
+			return fetched_data[row-1][1]
+		elif row and turn_off:
+			return fetched_data[row-1][2]
+		elif row:
+			# return as tuple without id
+			return fetched_data[row-1][1:]
+		else:
+			return [tup[1:] for tup in fetched_data]
+
+
+	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
+		'''Fetch all data from error_tokens_and... table'''
+		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql)
+		all_data = cursor.fetchall()
+		# print(all_data)
+		if row:			
+			# dict obj with room names as key and tokens or temperature as values
+			dict_obj = dict(zip(["salon","maly_pokoj","kuchnia","WC","outside"], all_data[row - 1][1:]))
+			# print(dic_obj)
+			if room_name:
+				# return int
+				return dict_obj[room_name]
+			#return list
+			elif show_dict:
+				return dict_obj
+			return all_data[row-1][1:]
+		#return list
+		if with_id:
+			return all_data
+		else:
+			# tup[1:] -> remove row number
+			return [tup[1:] for tup in all_data]
+
+	def main_fetch_data_from_db(self, table_name:str, row=False):
+		method_list = [self.fetch_all_data_from_sockets,
+						self.fetch_data_from_tokens]
+		method_dict = dict(zip(self.SQL_TABELS_NAMES, method_list))
+		return method_dict[table_name](row)
+		
 
 
 	

@@ -1,7 +1,7 @@
 console.log('heat_logic')
 
 window.onload = init;
-var names = ['Salon', 'maly_pokoj', 'kuchnia']
+var names = ['salon', 'maly_pokoj', 'kuchnia']
 var b_list = document.getElementsByTagName('b');
 var b_sliced_list = slice_list(b_list, 0, 3);
 

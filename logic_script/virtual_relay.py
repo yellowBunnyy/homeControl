@@ -23,7 +23,7 @@ class Dioda():
 	    GPIO.setmode(GPIO.BCM)	   
 	    GPIO.setup(pin, GPIO.OUT)
 	    GPIO.output(pin, signal)
-	    print(pin, signal)
+	    print(f'pin {pin} signal {signal}')
 	    print('#'*30)
 
 	def recive_input_from_decive(self, pin_device):
@@ -104,11 +104,12 @@ class Relays_class(Dioda, TimeConvertet):
 	'''DISCRIPTION:
 	'''
 
-	def __init__(self, obj=save_to_file_obj):
+	def __init__(self, obj=save_to_file_obj, SQL_obj=True ):
 		
 		self.save_to_file = obj
 		self.LIGHTING_PATH = obj.STATIC_LIGHTING_PATH
 		self.data_path = obj.STATIC_PATH
+		self.SQL_obj = SQL_obj
 
 	def relay(self, status, pin=None):
 		if status:
@@ -225,10 +226,11 @@ class Relays_class(Dioda, TimeConvertet):
 				print(f'ustawiona: {temp1}, odczytana: {temp2}, {temp1 > temp2}, {name1}')
 				if temp1 > temp2: # temp1 ustawiona, temp2 odczytana
 					# turn on     		
-					self.relay(status=0 if reverse else 1, pin=names_and_pins[name1.lower()])
+
+					self.relay(status=1,pin=names_and_pins[name1.lower()])
 				else:
 					# turn off
-					self.relay(status=1 if reverse else 0, pin=names_and_pins[name1.lower()])         
+					self.relay(status=0,pin=names_and_pins[name1.lower()])         
 
 		# obj_relay = virtual_relay.Relays_class(obj=self.file_obj)
 		test = {"sockets":19, "heat_switch":None, "heats":{'salon':21,'maly_pokoj':20,'kuchnia':26}, "temps":None}
@@ -236,19 +238,35 @@ class Relays_class(Dioda, TimeConvertet):
 		to_compare = []
 		temporary_pin = ''
 		for name, pin in test.items():
-			data = self.save_to_file.load_from_json(path=self.data_path, key=name)
 			# be careful here HARDCODING SCRIPT
-			if name == 'heats' or name == 'temps':
-				to_compare += [self.save_to_file.load_from_json(path=self.data_path, key=name)]
+			if name == 'sockets':
+				data = dict(zip(['ON', 'OFF'],
+								self.SQL_obj.fetch_all_data_from_sockets(row=1)))
+				# print(data,'W relay!!')
+			elif name == "heat_switch":
+				data = dict(zip(['ON', 'OFF'],
+								self.SQL_obj.fetch_all_data_from_sockets(row=2)))
+			elif name == 'heats':
+				data_db = self.SQL_obj.fetch_data_from_tokens(row=2, show_dict=True)	
+				data = {room: val for room, val in data_db.items() 
+						if room not in ["WC", "outside"]}
+			else:
+				data = self.save_to_file.load_from_json(path=self.data_path, key=name)
+
+			
+			if name in ['heats','temps']:
+				to_compare += [data]
 				if pin:
 					temporary_pin = pin
+
 			elif name == 'heat_switch':
 				to_condition = data
 			else:
 				if pin:
 					print('#'*10,'wyłączenie gniazd','#'*10)
 					# print(data, current_time)
-					self.relay_configure(seted_time=data, current_time=current_time, pin=pin, flag=True)
+					self.relay_configure(seted_time=data, 
+										current_time=current_time, pin=pin, flag=True)
 				
 		else:
 			print('#'*10,'wyłączenie heaters','#'*10)
