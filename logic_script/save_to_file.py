@@ -51,7 +51,9 @@ class HandlerFile():
 				# print('data was load with key {}'.format(content[key]))
 				return content[key]
 			except KeyError:
-				raise MyExceptions(f'Brak klucza w load from json PATH --> {path}')
+				print(f'klucz do content == {key}')
+				raise MyExceptions(f'Brak klucza w load from \
+					json PATH klucz do content {key} --> {path}')
 		else:
 			# print('data was load without key {}'.format(content))
 			return content
@@ -360,7 +362,9 @@ class HandlerSQL(HandlerCsv):
 				turn_off = ?
 				WHERE id = ?'''
 		cursor = self.conn.cursor()
-		print('data was update in db {} in row {}'.format(times, str(row)))
+		row_explanation = {1 : 'sockets', 2: 'heaters_switch'}
+		print('data was update in socket table {} in row {}'.format(times[:-1], 
+													row_explanation[row]))
 		cursor.execute(sql,tuple(times))
 		self.conn.commit()
 		# add somewhere method for prevent when we put does not existing row
@@ -380,10 +384,11 @@ class HandlerSQL(HandlerCsv):
 						WHERE id = ?'''
 		cursor = self.conn.cursor()
 		cursor.execute(sql, tuple_data)
-		# without last one (in this case row no.)
+		# without last one (in this case row no.)		
 		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
-																	tuple_data[-1]))
-
+														tuple_data[-1]))
+		self.conn.commit()
+		
 	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.
 		row: row number.
@@ -398,6 +403,7 @@ class HandlerSQL(HandlerCsv):
 		elif row and turn_off:
 			return fetched_data[row-1][2]
 		elif row:
+			# return as tuple without id
 			return fetched_data[row-1][1:]
 		else:
 			return [tup[1:] for tup in fetched_data]
