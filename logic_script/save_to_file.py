@@ -68,13 +68,6 @@ class HandlerFile():
 		self.save_to_json(path, dict_obj)
 		return 'container was updated {}'.format(dict_obj)
 
-
-	# def update_file2(self, path, key, key2 content):
-	#     dict_obj = self.load_from_json(path)
-	#     dict_obj[key][key2] = content
-	#     self.save_to_json(path, dict_obj)
-	#     return 'container was updated {}'.format(dict_obj)
-	
 	
 	def delete_data_from_file(self, path, key):
 		dict_obj = self.load_from_json(path)
@@ -219,7 +212,8 @@ class HandlerSQL(HandlerCsv):
 		on data bases'''
 	SQL_TABELS_NAMES = [
 	'sockets', 
-	'errors_tokens_and_seted_temperature',]
+	'errors_tokens_and_seted_temperature',
+	'temperature_humidity',]
 
 	def __init__(self):
 		'''Here we initial conection to database and create
@@ -235,9 +229,8 @@ class HandlerSQL(HandlerCsv):
 			print('have connetction')
 			# this var have reference to dict with key as table_name and value as
 			# list with method from SQL_Handlet class
-			data_from_initial = self.initial_table_in_db()
-			# self.rows_amount = data_from_initial['rows_amount']
-			# self.table_names = data_from_initial['table_names']
+			self.initial_table_in_db()
+			
 
 			
 	def initial_table_in_db(self, add_default_value:bool=True, rows_amount:int=2) -> dict:
@@ -252,6 +245,10 @@ class HandlerSQL(HandlerCsv):
 		self.SQL_TABELS_NAMES[1]: 
 						[self.table_errors_tokens_and_seted_temperature,
 						self.insert_data_token_table,
+						(0,0,0,0,0)],
+		self.SQL_TABELS_NAMES[2]:
+						[self.table_temperature, 
+						self.insert_data_to_temperature,
 						(0,0,0,0,0)],
 		}		
 		if add_default_value:
@@ -270,8 +267,6 @@ class HandlerSQL(HandlerCsv):
 				return {'rows_amount':rows_amount,
 					 	'table_names': list(SQL_dict.keys()),
 					 	}		
-		
-		
 
 
 	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
@@ -290,6 +285,19 @@ class HandlerSQL(HandlerCsv):
 		'''This method fetch comumns names and return them in list'''
 		column_list = self.c.execute(f'''SELECT * from {table_name}''')
 		return [row[0] for row in column_list.description]
+
+# CREATE TABLE
+
+	def table_temperature(self) -> tuple:
+		sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+		return self.SQL_TABELS_NAMES[2], sql
+		
 
 	def table_sockets(self,)-> tuple:
 		'''Table sheet for table sockets
@@ -322,6 +330,24 @@ class HandlerSQL(HandlerCsv):
 		cursor.execute(table_sheet[1])
 		print('table was created --> {}'.format(table_sheet[0]))
 
+
+### INSERT
+
+	def insert_data_to_temperature(self, tuple_int:tuple):
+		sql = '''INSERT INTO 'temperature_humidity' (
+				salon,
+				maly_pokoj,
+				kuchnia,
+				WC,
+				outside)
+				VALUES (?,?,?,?,?)'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql, tuple_int)
+		self.conn.commit()
+		print(f'data was added {tuple_int}')
+		last_row = cursor.lastrowid
+		return last_row
+
 	def insert_data_to_sockets_table(self, times:tuple) -> int:
 		'''return last row in int'''
 		sql = '''INSERT INTO sockets (
@@ -350,6 +376,26 @@ class HandlerSQL(HandlerCsv):
 		print(f'data was added {tokens_int if tokens_int else seted_temperature}')
 		last_row = cursor.lastrowid
 		return last_row
+
+## UPDATE
+
+	def update_data_in_temperature(self, temp_or_humidity:tuple, temperature:bool=True):
+		# temperature or humidity with id depends of input
+		# Note:
+		# 1 - is temperature
+		# 2 - is humidity
+		data = temp_or_humidity + (1,) if temperature else temp_or_humidity + (2,)
+		sql = '''UPDATE temperature_humidity SET
+						salon = ?,
+						maly_pokoj = ?,
+						kuchnia = ?,
+						WC = ?,
+						outside = ?
+						WHERE id = ?'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql, data)
+		print(f'{"temp" if temperature else "humidity"} was updated {temp_or_humidity}')		
+		self.conn.commit()
 
 	def update_data_in_sockets_table(self, times:tuple, row:int):
 		'''This method updates data in sockets table
@@ -388,7 +434,16 @@ class HandlerSQL(HandlerCsv):
 		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
 														tuple_data[-1]))
 		self.conn.commit()
-		
+
+## FETCH DATA
+	
+	def fetch_all_data_from_temp(self, row:int=False):
+		sql = '''SELECT * from temperature_humidity'''
+		cursor = self.conn.cursor()
+		cursor.execute(sql)
+		fetched_data = cursor.fetchall()
+		return fetched_data
+
 	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.
 		row: row number.
@@ -439,8 +494,15 @@ class HandlerSQL(HandlerCsv):
 						self.fetch_data_from_tokens]
 		method_dict = dict(zip(self.SQL_TABELS_NAMES, method_list))
 		return method_dict[table_name](row)
-		
 
+## REMOVE
+
+	def drop_table(self, table_name):
+		sql = '''DROP TABLE IF EXISTS {}'''.format(table_name)
+		cursor = self.conn.cursor()
+		cursor.execute(sql)
+		print(f'TBL {table_name} WAS REMOVED!!')
+		self.conn.commit()
 
 	
 	
