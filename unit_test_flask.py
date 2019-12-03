@@ -10,6 +10,72 @@ class Basic_tests(unittest.TestCase):
 	obj_dht_handler = flask_obj.dht_handler_obj
 	obj_SQL_class = obj_dht_handler.SQL_obj
 
+	def flat_list(self, data):
+			'''recur func. Flating or (vectorize) x dimension matrix'''
+			container = []
+			for val in data:
+				if type(val) == int:
+					container += [val]
+				else:
+					container += self.flat_list(val)
+			return tuple(container)
+
+
+	# def test_create_tbl_temperature(self):
+	# 	flag = self.obj_SQL_class.recognize_if_table_in_db_exist(table_name='temperature_humidity')
+	# 	self.assertTrue(not flag)
+
+
+	# def test_fetch_data_tbl_temperature(self):
+	# 	ans = tuple([0]*10)
+	# 	sql_method = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
+
+	# 	flated_data = self.flat_list(sql_method)
+	# 	flag = ans == flated_data
+	# 	print(ans ,' | ', flated_data)
+	# 	self.assertTrue(flag)
+
+
+	def test_update_data_tbl_temperature(self):
+		ans = tuple(range(10))
+		self.obj_SQL_class.update_data_in_temperature(
+			temp_or_humidity=ans[:len(ans)//2])
+		self.obj_SQL_class.update_data_in_temperature(
+			temp_or_humidity=ans[len(ans)//2:], temperature=False)
+		fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
+		to_compare = self.flat_list(fetched_data)
+		flag = ans == to_compare
+		print(ans, ' | ', to_compare)
+		self.assertTrue(flag)
+
+	def test_update_data_tbl_temperature_rdm(self):
+		for _ in range(100):
+			ans = tuple(random.choices(range(-200,200), k=10))
+			temp, humidity = tuple(ans[:len(ans)//2]),  tuple(ans[len(ans)//2:])
+			self.obj_SQL_class.update_data_in_temperature(
+				temp_or_humidity=temp)
+			self.obj_SQL_class.update_data_in_temperature(
+				temp_or_humidity=humidity, temperature=False)
+			fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
+			to_compare = self.flat_list(fetched_data)
+			flag = ans == to_compare
+			print(ans, ' | ', to_compare)
+			self.assertTrue(flag)
+
+
+
+
+	# def test_drop_tbl(self):
+	# 	table_name = 'temperature_humidity'
+	# 	self.obj_SQL_class.drop_table(table_name=table_name)
+
+
+
+
+
+
+
+
 	# def initial_db_and_tables(self, amt):
 	# 	data_from_initial = self.obj_SQL_class.initial_table_in_db(rows_amount=amt)
 	# 	rows_amount = data_from_initial['rows_amount']
