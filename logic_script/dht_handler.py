@@ -4,7 +4,6 @@ from time import sleep
 ##################fast get to paths######################### 
 p1_data = save_to_file.HandlerFile().STATIC_PATH
 p2_sensors = save_to_file.HandlerFile().STATIC_SENSOR_PATH
-p3_errors_path = save_to_file.HandlerFile().STATIC_ERRORS_PATH
 obj_save_file = save_to_file.HandlerFile()
 ############################################################
 class MyExceptions(Exception):
@@ -13,11 +12,10 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, data_path, sensors_path, errors_path, file_obj):
+	def __init__(self, data_path, sensors_path, file_obj):
 		
 		self.data_path = data_path
-		self.sensors_path = sensors_path
-		self.errors_path = errors_path		
+		self.sensors_path = sensors_path				
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
 		self.file_obj.create_container(self.sensors_path)
@@ -48,8 +46,8 @@ class DHT_Handler(Container):
 	sensor_errors_header = 'sensor_errors'
 
 
-	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, errors_path=p3_errors_path, file_obj=obj_save_file):
-		super().__init__(data_path, sensors_path, errors_path, file_obj)
+	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, file_obj=obj_save_file):
+		super().__init__(data_path, sensors_path, file_obj)
 		self.SQL_obj = save_to_file.HandlerSQL()
 		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
 
@@ -162,10 +160,13 @@ class DHT_Handler(Container):
 		if not readed_data or readed_data == 10:			
 			add_token_error(sensor_name=sensor_name)
 			print('from file!!!', data_from_file[sensor_name])
-			return data_from_file[sensor_name]				
-		else:									
-			data = {name: round(value,1) if value != None else value for name, value in zip(['temp','humidity'], readed_data[::-1])}				
-			self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name, content=data)
+			return data_from_file[sensor_name]
+
+		else:
+			#update all temps and humidity									
+			data = {name: round(value,1) if value != None else value 
+					for name, value in zip(['temp','humidity'], readed_data[::-1])}
+			# self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name, content=data)
 			remove_token_error(sensor_name=sensor_name)						
 			return data
 	
@@ -173,17 +174,14 @@ class DHT_Handler(Container):
 	def update(self) -> dict:
 		'''this method return dict include all room_names as key and dict as value where
 			key is temp and humidity and value is int 
-			e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
+			e.g {'salon': {'temp':20, 'humidity':40}, 'maly_pokoj': {'temp':20, 'humidity':06}, itd.}
 			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''
-							
-		# if self.SQL_obj.recognize_if_table_in_db_exist(table_name=self.table_name):
-		# 	self.SQL_obj.create_table(
-		# 		table_sheet=SQL_obj.table_errors_tokens_and_seted_temperature())
-		# # here we set all tokens on 0.
-		# 	self.SQL_obj.insert_data_token_table(
-		# 		tokens_int=tuple(0 for _ in self.names_container_default))		
+			in main data file saved in .json '''	
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
+		temps, humidity = [tuple(value[t] for key, value in container.items()) 
+							for t in ['temp','humidity']]			
+		self.SQL_obj.update_data_in_temperature(temp_or_humidity=temps)
+		self.SQL_obj.update_data_in_temperature(temp_or_humidity=humidity, temperature=False)
 		return container
 
 	
