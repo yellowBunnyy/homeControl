@@ -7,9 +7,9 @@ function init(){
 	my_read.open('GET', '/temp_logic');
 	my_read.onload = function() {
 		var json_data = JSON.parse(my_read.responseText);
-		var errors_obj = json_data['sensor_errors'];
-		var temps_data = json_data['temps'];		
-		var sensor_names = Object.keys(temps_data);
+		// var errors_obj = json_data['sensor_errors'];
+		// var temps_data = json_data['temps'];		
+		var sensor_names = Object.keys(json_data);
 		var parrent = document.getElementById('parrent');
 		for(var i = 0; i < sensor_names.length; i++){
 			var header = document.createElement('h2');
@@ -31,10 +31,10 @@ function read_data() {
 	my_read.open('GET', '/temp_logic');
 	my_read.onload = function() {  // onload wczytuje dane zamieszzone w funkcji anonimowej pradopodobnie domyslnie jest null
 		var json_data = JSON.parse(my_read.responseText);
-		var temps_data = json_data['temps'];
-		var sensor_errors = json_data['sensor_errors'];
-		var sensor_names = Object.keys(temps_data); // this obj and method return array with key names 
-		unzip_dict(names=sensor_names, data=temps_data);		
+		// var temps_data = json_data['temps'];
+		// var sensor_errors = json_data['sensor_errors'];
+		var sensor_names = Object.keys(json_data); // this obj and method return array with key names 
+		unzip_dict(names=sensor_names, data=json_data);		
 		read_from_db_file();
 	};
 	my_read.send();	
