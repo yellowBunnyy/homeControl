@@ -10,10 +10,10 @@ class HandlerFile():
 
 	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
-	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')
-	STATIC_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens.json')
+	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
 	STATIC_DB_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens_db.db')	
-
+	room_names = ["salon","maly_pokoj","kuchnia","WC","outside"]
+	
 	def create_container(self, path, content=None):
 		file_name = path.split('/')[-1]
 		# print(file_name)
@@ -437,11 +437,22 @@ class HandlerSQL(HandlerCsv):
 
 ## FETCH DATA
 	
-	def fetch_all_data_from_temp(self, row:int=False):
+	def fetch_all_data_from_temp(self, row:int=False, show_dict:bool=False) -> (dict, list):
+		'''
+		1 - temps,
+		2 - humidity
+				'''
 		sql = '''SELECT * from temperature_humidity'''
 		cursor = self.conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()
+		if show_dict:
+			dict_obj = {name: values for name, values in zip(self.room_names, [{'temp':temp, 'humidity':hum} 
+			for temp, hum in zip(fetched_data[0][1:],fetched_data[1][1:])])}
+			# print(dict_obj)
+			# return dict obj where keys are room names and value 
+			#	are dict obj with temp and humidity value
+			return dict_obj
 		return fetched_data
 
 	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
@@ -473,7 +484,7 @@ class HandlerSQL(HandlerCsv):
 		# print(all_data)
 		if row:			
 			# dict obj with room names as key and tokens or temperature as values
-			dict_obj = dict(zip(["salon","maly_pokoj","kuchnia","WC","outside"], all_data[row - 1][1:]))
+			dict_obj = dict(zip(self.room_names, all_data[row - 1][1:]))
 			# print(dic_obj)
 			if room_name:
 				# return int
