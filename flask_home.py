@@ -6,17 +6,14 @@ from logic_script import virtual_relay, save_to_file, dht_handler
 app = Flask(__name__)
 print(os.getcwd())
 TEMP_KEY = 'temps'
-SOCKETS_TABLE = 'sockets_table'
-SENSOR_ERRORS = 'sensor_errors'
+
 save_to_file_obj = save_to_file.HandlerFile()
 DATA_PATH = save_to_file_obj.STATIC_PATH
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
-ERRORS_PATH = save_to_file_obj.STATIC_ERRORS_PATH
 dht_handler_obj = dht_handler.DHT_Handler(
 		data_path=DATA_PATH,
-		sensors_path= SENSOR_PATH,
-		errors_path = ERRORS_PATH,		
+		sensors_path= SENSOR_PATH,				
 		file_obj=save_to_file_obj)
 SQL_obj = dht_handler_obj.SQL_obj
 virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj, 
@@ -51,20 +48,31 @@ def heat_config():
 
 
 @app.route('/temp_logic', methods=['GET'])
-def temp_background():
+def temp_background() -> dict:
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
-	temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
+	# temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
+	# if temp_in_json:				
+	# 	json_data = json.dumps(temp_in_json)
+	# 	return json_data
 	
-	if temp_in_json:				
-		json_data = json.dumps(temp_in_json)
+	temperature_in_db = SQL_obj.fetch_all_data_from_temp(show_dict=True)
+	if type(temperature_in_db) == dict:
+		json_data = json.dumps(temperature_in_db)
 		return json_data
-	print('DATA NOT DETECTED temp')
-	# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}
-	# we use here sensor list path with sensor name and pin e.g {...'salon':1...}
-	container = {f'{TEMP_KEY}':dht_handler_obj.dict_with_keys_as_room_names_and_dict_as_value()}		
-	json_data = json.dumps(container)
-	return json_data
+	elif temperature_in_db:
+		raise Exception('temperature_in_db is not dict!!')
+	else:
+		print('DATA NOT DETECTED temp')
+		# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}
+		# we use here sensor list path with sensor name and pin e.g {...'salon':1...}
+		container = dht_handler_obj.dict_with_keys_as_room_names_and_dict_as_value()
+		json_data = json.dumps(container)
+		return json_data	
+	
+	
+			
+	
 
 
 @app.route('/lighting', methods = ['GET','POST'])
