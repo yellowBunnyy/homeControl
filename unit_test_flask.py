@@ -6,9 +6,9 @@ import flask_home, os, datetime, time
 
 class Basic_tests(unittest.TestCase):
    # obj_convert_test = convert_time.TimeConvertet()
-	flask_obj = flask_home
-	obj_dht_handler = flask_obj.dht_handler_obj
-	obj_SQL_class = obj_dht_handler.SQL_obj
+	# flask_obj = flask_home
+	# obj_dht_handler = flask_obj.dht_handler_obj
+	# obj_SQL_class = obj_dht_handler.SQL_obj
 
 	def flat_list(self, data):
 			'''recur func. Flating or (vectorize) x dimension matrix'''
@@ -20,6 +20,25 @@ class Basic_tests(unittest.TestCase):
 					container += self.flat_list(val)
 			return tuple(container)
 
+	def test_room_names_in_dict(self):
+		room_names = ["salon","maly_pokoj","kuchnia","WC","outside"]
+		SQL_obj = save_to_file.HandlerSQL()
+		data = SQL_obj.fetch_all_data_from_temp(show_dict=True)
+		only_room_keys_list = list(data.keys())
+		flag = room_names == only_room_keys_list
+		self.assertTrue(flag)
+
+	def test_room_names_are_correct(self):
+		room_names = ["salon","maly_pokoj","kuchnia","WC","outside"]
+		SQL_obj = save_to_file.HandlerSQL()
+		fetched_list_with_tuples = SQL_obj.fetch_all_data_from_temp()	
+		temps, humidity =  [tup[1:] for tup in fetched_list_with_tuples]
+		list_with_temps_and_humidity = [{'temp':temp, 'humidity': hum} 
+										for temp, hum in zip(temps, humidity)]
+		expected = dict(zip(room_names, list_with_temps_and_humidity))
+		from_method = SQL_obj.fetch_all_data_from_temp(show_dict=True)
+		flag = expected == from_method
+		self.assertTrue(flag)
 
 	# def test_create_tbl_temperature(self):
 	# 	flag = self.obj_SQL_class.recognize_if_table_in_db_exist(table_name='temperature_humidity')
@@ -36,31 +55,31 @@ class Basic_tests(unittest.TestCase):
 	# 	self.assertTrue(flag)
 
 
-	def test_update_data_tbl_temperature(self):
-		ans = tuple(range(10))
-		self.obj_SQL_class.update_data_in_temperature(
-			temp_or_humidity=ans[:len(ans)//2])
-		self.obj_SQL_class.update_data_in_temperature(
-			temp_or_humidity=ans[len(ans)//2:], temperature=False)
-		fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
-		to_compare = self.flat_list(fetched_data)
-		flag = ans == to_compare
-		print(ans, ' | ', to_compare)
-		self.assertTrue(flag)
+	# def test_update_data_tbl_temperature(self):
+	# 	ans = tuple(range(10))
+	# 	self.obj_SQL_class.update_data_in_temperature(
+	# 		temp_or_humidity=ans[:len(ans)//2])
+	# 	self.obj_SQL_class.update_data_in_temperature(
+	# 		temp_or_humidity=ans[len(ans)//2:], temperature=False)
+	# 	fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
+	# 	to_compare = self.flat_list(fetched_data)
+	# 	flag = ans == to_compare
+	# 	print(ans, ' | ', to_compare)
+	# 	self.assertTrue(flag)
 
-	def test_update_data_tbl_temperature_rdm(self):
-		for _ in range(100):
-			ans = tuple(random.choices(range(-200,200), k=10))
-			temp, humidity = tuple(ans[:len(ans)//2]),  tuple(ans[len(ans)//2:])
-			self.obj_SQL_class.update_data_in_temperature(
-				temp_or_humidity=temp)
-			self.obj_SQL_class.update_data_in_temperature(
-				temp_or_humidity=humidity, temperature=False)
-			fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
-			to_compare = self.flat_list(fetched_data)
-			flag = ans == to_compare
-			print(ans, ' | ', to_compare)
-			self.assertTrue(flag)
+	# def test_update_data_tbl_temperature_rdm(self):
+	# 	for _ in range(100):
+	# 		ans = tuple(random.choices(range(-200,200), k=10))
+	# 		temp, humidity = tuple(ans[:len(ans)//2]),  tuple(ans[len(ans)//2:])
+	# 		self.obj_SQL_class.update_data_in_temperature(
+	# 			temp_or_humidity=temp)
+	# 		self.obj_SQL_class.update_data_in_temperature(
+	# 			temp_or_humidity=humidity, temperature=False)
+	# 		fetched_data = [tup[1:] for tup in self.obj_SQL_class.fetch_all_data_from_temp()]
+	# 		to_compare = self.flat_list(fetched_data)
+	# 		flag = ans == to_compare
+	# 		print(ans, ' | ', to_compare)
+	# 		self.assertTrue(flag)
 
 
 
