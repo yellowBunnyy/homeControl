@@ -19,7 +19,7 @@ SQL_obj = dht_handler_obj.SQL_obj
 virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj, 
 												SQL_obj=SQL_obj)
 #create container to data
-print(save_to_file_obj.create_container(DATA_PATH))
+
 
 
 class MyExceptions(Exception):
@@ -51,17 +51,13 @@ def heat_config():
 def temp_background() -> dict:
 	'''function working background. this function read temp from sensors and save to .json file.
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
-	# temp_in_json = {f'{TEMP_KEY}' : save_to_file_obj.load_from_json(path=DATA_PATH, key=TEMP_KEY)}
-	# if temp_in_json:				
-	# 	json_data = json.dumps(temp_in_json)
-	# 	return json_data
-	
-	temperature_in_db = SQL_obj.fetch_all_data_from_temp(show_dict=True)
+		
+	temperature_in_db = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
 	if type(temperature_in_db) == dict:
 		json_data = json.dumps(temperature_in_db)
 		return json_data
 	elif temperature_in_db:
-		raise Exception('temperature_in_db is not dict!!')
+		raise TypeError('temperature_in_db is not dict!!')
 	else:
 		print('DATA NOT DETECTED temp')
 		# container varible contain dict with sensor names and temp and humidity value {...'salon': {temp:21,'humidity':39}...}

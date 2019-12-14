@@ -13,6 +13,11 @@ class HandlerFile():
 	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
 	STATIC_DB_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens_db.db')	
 	room_names = ["salon","maly_pokoj","kuchnia","WC","outside"]
+	names_and_pins_default = {'salon': 7, 
+							'maly_pokoj': 12, 
+							'kuchnia': 16,							
+							'WC': 8,
+							'outside': 4}
 	
 	def create_container(self, path, content=None):
 		file_name = path.split('/')[-1]
@@ -91,122 +96,8 @@ class HandlerFile():
 		else:
 			return 'nothing here'
 	
-class HandlerCsv(HandlerFile):
-	
-	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
-	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']	
 
-
-	def save_temp_to_csv_handler(self, full_time):
-		date, current_time = full_time.split(',')
-		temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
-		for trigger_time in self.TRIGGER_HOURS:
-			# date = self.convert_to_str(datetime.datetime.now())
-			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} date: {date}' )			
-			if trigger_time == current_time:			
-				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
-				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
-				print(f'{trigger_time}ZAPISANO DO CSV')
-
-
-	def convert_to_str(self, date):
-		'''convert datetime date object to str date object'''
-		if type(date) == str:
-			return date
-		elif type(date) == datetime.datetime:
-			date = date.strftime('%d-%m-%y')
-			return date
-		else:
-			raise MyExceptions('unknow date format!')
-
-
-	def read_from_csv(self, file_path, names=None, data=None, row_num=False, header=None):
-		'''Multilpe function in this method.
-		names = True --> show columns and data under columns in console window 
-		row_num = True --> count rows and return number of rows
-		header = True --> method check if file exist'''
-		count_rows = 0
-		try:
-			with open(file_path, 'r') as file:
-				reader = csv.DictReader(file)
-				if header:
-					return True
-				if names:
-					names = ['date'] + list(names)
-					print(f'columns: \n{names}')
-				for row in reader:
-					count_rows += 1
-					if names:
-						print(' '.join(row[name] for name in names))
-				else:
-					if row_num:
-						return count_rows
-		except:
-			return False
-
-	def save_to_file_csv(self, file_path, data, hour, date):
-		if any(1 for value in data.values() if type(value) == dict):
-			data = {name: d_obj['temp'] for name, d_obj in data.items()}
-		data_with_date = {'date': date}
-		data_with_date['hour'] = hour
-		for room, temp in data.items():
-			data_with_date[room] = temp
-
-		#this flag check if we have created hader in csv file			
-		add_header_flag = self.read_from_csv(file_path, header=True)
-
-		with open(file_path, 'a') as file:
-			fieldnames = data_with_date.keys()
-			df = csv.DictWriter(f=file, fieldnames=fieldnames,)
-			if add_header_flag:
-				df.writerow(data_with_date)
-			else:
-				df.writeheader()
-				df.writerow(data_with_date)
-
-
-
-############################# for numpy #############################
-	def pandas_read_from_csv(self, file_path):
-		with open(file_path, 'r') as file_csv:
-			print(file_csv)
-			for row in file_csv:
-				print(row)
-			# df = pd.DataFrame(data=file_csv)
-			# print(df)
-
-
-	def pandas_save_to_file(self, data, file_path, obj_date=datetime.datetime.now()):
-		'''data - here we have dict object with key means rooms and value 
-					means temp in every room's
-				   date - in str format if not slave function convert to str'''
-		if any(1 for value in data.values() if type(value) == dict):
-			data = {name: d_obj['temp'] for name, d_obj in data.items()}
-
-		data_with_date = {'date': self.convert_to_str(obj_date)}
-		for room, temp in data.items():
-			data_with_date[room] = temp
-		# print(data_with_date)
-		numb_index = self.read_from_csv(file_path=file_path, row_num=True)
-		numb_index = numb_index if numb_index else 0
-		df_obj = pd.DataFrame(data=data_with_date, index=[numb_index])
-		if numb_index:
-			df_obj.to_csv(path_or_buf=file_path, sep=',',header=False, mode='a')
-			return True
-		else:
-			df_obj.to_csv(path_or_buf=file_path, sep=',',header=True, mode='w')
-			return True
-
-	def pandas_random_insert_data(self, no_examples, file_path):
-		for _ in range(no_examples):
-			tup_rand_choces = random.choices(range(-100,100),k=3)
-			data = {name: val for name, val in zip(['salon', 'm_p', 'kuchnia'], tup_rand_choces)}
-			ran_date = datetime.datetime(year=2019, month=random.choice(range(1,13)),
-										 day=random.choice(range(1,31)))
-			self.pandas_save_to_file(file_path=file_path, data=data, obj_date=ran_date)
-############################# endBlock #############################
-
-class HandlerSQL(HandlerCsv):
+class HandlerSQL(HandlerFile):
 	'''DISCRIPTION:
 		this class handle everything what is related with operations 
 		on data bases'''
@@ -259,8 +150,17 @@ class HandlerSQL(HandlerCsv):
 					self.create_table(
 							table_sheet=table_sheet())		
 					# insert two to rows in one table
-					for _ in range(rows_amount):
-						insert_data_method(default_values)
+					if table_name == self.SQL_TABELS_NAMES[2]:
+						# create 3 rows
+						for i in range(3):
+							if i==2:
+								insert_data_method(tuple(self.names_and_pins_default.values()))
+							else:
+								insert_data_method(default_values)
+								
+					else:																
+						for _ in range(rows_amount):
+							insert_data_method(default_values)
 				else:
 					print(f'table {table_name} EXISTS')
 			else:
@@ -437,7 +337,7 @@ class HandlerSQL(HandlerCsv):
 
 ## FETCH DATA
 	
-	def fetch_all_data_from_temp(self, row:int=False, show_dict:bool=False) -> (dict, list):
+	def fetch_all_data_from_temp(self, row:int=False, temperature_dict:bool=False, pin_dict:bool=False) -> (dict, list):
 		'''
 		1 - temps,
 		2 - humidity
@@ -446,13 +346,20 @@ class HandlerSQL(HandlerCsv):
 		cursor = self.conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()
-		if show_dict:
-			dict_obj = {name: values for name, values in zip(self.room_names, [{'temp':temp, 'humidity':hum} 
-			for temp, hum in zip(fetched_data[0][1:],fetched_data[1][1:])])}
-			# print(dict_obj)
+
+		if temperature_dict:
 			# return dict obj where keys are room names and value 
-			#	are dict obj with temp and humidity value
+			#	are dict obj with temp and humidity value			
+			dict_obj = {name: values for name, values in zip(self.room_names, [{'temp':temp, 'humidity':hum} 
+			for temp, hum in zip(fetched_data[0][1:],fetched_data[1][1:])])}			
 			return dict_obj
+		if pin_dict:
+			#names and pins
+			dict_obj = dict(zip(self.room_names, fetched_data[2][1:]))
+			return dict_obj							
+		if row:
+			# data in tuple without row			
+			return fetched_data[row - 1][1:]
 		return fetched_data
 
 	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
@@ -515,8 +422,135 @@ class HandlerSQL(HandlerCsv):
 		print(f'TBL {table_name} WAS REMOVED!!')
 		self.conn.commit()
 
+	def remove_row_from_tbl(self, tbl_name:str, row:int):
+		sql = '''DELETE FROM {}
+				WHERE id={}'''.format(tbl_name,row)
+		cursor = self.conn.cursor()
+		cursor.execute(sql)
+		print(f'row: {row} form tbl: {tbl_name} was removed!!')
+		self.conn.commit()
+
 	
+class HandlerCsv(HandlerSQL):
 	
+	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
+	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']
+
+
+	def save_temp_to_csv_handler(self, full_time):
+		date, current_time = full_time.split(',')
+		# temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
+		temperature_data = self.fetch_all_data_from_temp(temperature_dict=True)
+
+		for trigger_time in self.TRIGGER_HOURS:
+			# date = self.convert_to_str(datetime.datetime.now())
+			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} date: {date}' )			
+			if trigger_time == current_time:			
+				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
+				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
+				print(f'{trigger_time}ZAPISANO DO CSV')
+
+
+	def convert_to_str(self, date):
+		'''convert datetime date object to str date object'''
+		if type(date) == str:
+			return date
+		elif type(date) == datetime.datetime:
+			date = date.strftime('%d-%m-%y')
+			return date
+		else:
+			raise MyExceptions('unknow date format!')
+
+
+	def read_from_csv(self, file_path, names=None, data=None, row_num=False, header=None):
+		'''Multilpe function in this method.
+		names = True --> show columns and data under columns in console window 
+		row_num = True --> count rows and return number of rows
+		header = True --> method check if file exist'''
+		count_rows = 0
+		try:
+			with open(file_path, 'r') as file:
+				reader = csv.DictReader(file)
+				if header:
+					return True
+				if names:
+					names = ['date'] + list(names)
+					print(f'columns: \n{names}')
+				for row in reader:
+					count_rows += 1
+					if names:
+						print(' '.join(row[name] for name in names))
+				else:
+					if row_num:
+						return count_rows
+		except:
+			return False
+
+	def save_to_file_csv(self, file_path, data, hour, date):
+		if any(1 for value in data.values() if type(value) == dict):
+			data = {name: d_obj['temp'] for name, d_obj in data.items()}
+		data_with_date = {'date': date}
+		data_with_date['hour'] = hour
+		for room, temp in data.items():
+			data_with_date[room] = temp
+
+		#this flag check if we have created hader in csv file			
+		add_header_flag = self.read_from_csv(file_path, header=True)
+
+		with open(file_path, 'a') as file:
+			fieldnames = data_with_date.keys()
+			df = csv.DictWriter(f=file, fieldnames=fieldnames,)
+			if add_header_flag:
+				df.writerow(data_with_date)
+			else:
+				df.writeheader()
+				df.writerow(data_with_date)
+
+	def delete_file(self, file_path):
+		os.remove(file_path)
+		return os.path.exists(file_path)
+
+
+############################# for numpy #############################
+	def pandas_read_from_csv(self, file_path):
+		with open(file_path, 'r') as file_csv:
+			print(file_csv)
+			for row in file_csv:
+				print(row)
+			# df = pd.DataFrame(data=file_csv)
+			# print(df)
+
+
+	def pandas_save_to_file(self, data, file_path, obj_date=datetime.datetime.now()):
+		'''data - here we have dict object with key means rooms and value 
+					means temp in every room's
+				   date - in str format if not slave function convert to str'''
+		if any(1 for value in data.values() if type(value) == dict):
+			data = {name: d_obj['temp'] for name, d_obj in data.items()}
+
+		data_with_date = {'date': self.convert_to_str(obj_date)}
+		for room, temp in data.items():
+			data_with_date[room] = temp
+		# print(data_with_date)
+		numb_index = self.read_from_csv(file_path=file_path, row_num=True)
+		numb_index = numb_index if numb_index else 0
+		df_obj = pd.DataFrame(data=data_with_date, index=[numb_index])
+		if numb_index:
+			df_obj.to_csv(path_or_buf=file_path, sep=',',header=False, mode='a')
+			return True
+		else:
+			df_obj.to_csv(path_or_buf=file_path, sep=',',header=True, mode='w')
+			return True
+
+	def pandas_random_insert_data(self, no_examples, file_path):
+		for _ in range(no_examples):
+			tup_rand_choces = random.choices(range(-100,100),k=3)
+			data = {name: val for name, val in zip(['salon', 'm_p', 'kuchnia'], tup_rand_choces)}
+			ran_date = datetime.datetime(year=2019, month=random.choice(range(1,13)),
+										 day=random.choice(range(1,31)))
+			self.pandas_save_to_file(file_path=file_path, data=data, obj_date=ran_date)
+############################# endBlock #############################
+
 	
 
 if __name__ == '__main__':

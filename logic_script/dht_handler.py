@@ -18,13 +18,13 @@ class Container():
 		self.sensors_path = sensors_path				
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
-		self.file_obj.create_container(self.sensors_path)
+		# self.file_obj.create_container(self.sensors_path)
 
 
-	def load_default(self):
-		names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'warsztat': 20, 'wc': 8,
-								   'na_zewnatrz': 4}
-		self.file_obj.save_to_json(self.sensors_path, names_container_default)
+	# def load_default(self):
+	# 	names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'warsztat': 20, 'wc': 8,
+	# 							   'na_zewnatrz': 4}
+	# 	self.file_obj.save_to_json(self.sensors_path, names_container_default)
 
 	def add_sensor(self, sensor_name, pin):
 		self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content= pin)
@@ -41,15 +41,14 @@ class DHT_Handler(Container):
 	
 	sensorDHT11 = dht.DHT11
 	sensorDHT22 = dht.DHT22
-	names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'WC':8, 'outside':4,}
-	# errors = {'0': 'No sensor!! Check connection...', '1': 'Wrong read!!'}
-	sensor_errors_header = 'sensor_errors'
+	
 
-
+	
 	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, file_obj=obj_save_file):
 		super().__init__(data_path, sensors_path, file_obj)
 		self.SQL_obj = save_to_file.HandlerSQL()
 		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
+		self.names_and_pins_default = file_obj.names_and_pins_default
 
 
 	def dict_with_keys_as_room_names_and_dict_as_value(self) -> dict:
@@ -57,10 +56,13 @@ class DHT_Handler(Container):
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 		data_from_sensor_file = self.file_obj.load_from_json(self.sensors_path)
-		data_from_file = self.file_obj.load_from_json(self.data_path, 'temps')
-		# print(data)
-		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, data_from_file=data_from_file) 
-		for sensor_name, pin in data_from_sensor_file.items()}
+		# pins_names_in_dict = SQL_obj.fetch_all_data_from_temp()
+
+		# data_from_file = self.file_obj.load_from_json(self.data_path, 'temps')
+		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
+
+		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, 
+			data_from_file=data_from_file_temps_tbl) for sensor_name, pin in data_from_sensor_file.items()}
 		return dict_data_with_all_rooms_temp_and_humidity
 
 	def recognicion_device(self, pin:int=None, name:str=None, test_tuple1:tuple=None, test_tuple2:tuple=None):
@@ -107,7 +109,7 @@ class DHT_Handler(Container):
 			data = dht.read_retry(sensor=self.sensorDHT22, pin=pin, retries=7, delay_seconds=1)
 		# range test		
 		if data[0] != None and 20 < data[0] <= 100 and -30 < data[1] <= 60:
-			print(f'{data} --> {sensor_name}, device --> dht22')
+			print(f'{tuple(map(lambda x: round(x,2), data))} --> {sensor_name}, device --> dht22')
 			return data
 		else:
 			# print(f'{data} --> {sensor_name} device --> dht11')
@@ -175,8 +177,7 @@ class DHT_Handler(Container):
 		'''this method return dict include all room_names as key and dict as value where
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity':40}, 'maly_pokoj': {'temp':20, 'humidity':06}, itd.}
-			AND create new dict object called 'sensor_errors_header' (for keep tokens to shows errors) 
-			in main data file saved in .json '''	
+			AND update temperature and humidity in table '''	
 		container = self.dict_with_keys_as_room_names_and_dict_as_value()
 		temps, humidity = [tuple(value[t] for key, value in container.items()) 
 							for t in ['temp','humidity']]			
