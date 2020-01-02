@@ -1,1 +1,1 @@
-{"maly_pokoj": {"pin": 18, "status": 1}, "WC": {"pin": 17, "status": 0}, "PP": {"pin": 27, "status": 0}, "salon": {"pin": 23, "status": 0}, "kuchnia": {"pin": 24, "status": 0}}
+{"maly_pokoj": {"pin": 18, "status": 0}, "WC": {"pin": 17, "status": 0}, "PP": {"pin": 27, "status": 0}, "salon": {"pin": 23, "status": 0}, "kuchnia": {"pin": 24, "status": 0}}
