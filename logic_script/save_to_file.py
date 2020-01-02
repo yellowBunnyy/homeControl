@@ -1,4 +1,4 @@
-import os, json, sys, datetime, csv, sqlite3
+import os, json, sys, datetime, csv, sqlite3, re
 os.chdir('/home/pi/Desktop/env/fl/src')
 print(os.getcwd())
 
@@ -11,7 +11,8 @@ class HandlerFile():
 	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
 	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
 	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
-	STATIC_DB_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens_db.db')	
+	STATIC_DB_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens_db.db')
+	STATIC_AGREGATE_TEMPERATURE = os.path.join(os.getcwd(),'logic_script','temp_data.csv')	
 	room_names = ["salon","maly_pokoj","kuchnia","WC","outside"]
 	names_and_pins_default = {'salon': 7, 
 							'maly_pokoj': 12, 
@@ -430,24 +431,83 @@ class HandlerSQL(HandlerFile):
 		print(f'row: {row} form tbl: {tbl_name} was removed!!')
 		self.conn.commit()
 
+## BACKEND FILE
 	
-class HandlerCsv(HandlerSQL):
-	
-	CSV_file = os.path.join(os.getcwd(),'logic_script','temp_data.csv')
-	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']
+class FileHandler:
+    def __init__(self, path:str):
+        self.path = path
+        print(f'backend file path: {path}')
+
+    def open_file(self):
+        return open(self.path, 'r')
+
+    def save_to_file(self):
+        return open(self.path, 'a+')
+
+    def delete_file(self):
+        os.remove(path=self.path)
+        print('file was deleted')
+
+    def close_f(self, obj):
+        print('file was closed')
+        obj.close()
 
 
-	def save_temp_to_csv_handler(self, full_time):
-		date, current_time = full_time.split(',')
-		# temperature_data = self.load_from_json(path=self.STATIC_PATH, key='temps')
+class CSV_Class:
+	   
+    # backend file are file obj
+    def __init__(self, backend_file):
+        self.backend_file = backend_file
+
+    def convert_to_dict(self, orderedDict_list: list) -> list:
+        f = lambda data: {key: int(val) if re.match(r'^[0-9]+$', val) else val
+                          for key, val in data.items()}
+        list_with_dicts = list(map(f, orderedDict_list))
+        return list_with_dicts
+
+    def read_csv(self, close_file:bool=False) -> list:
+        self.backend_file.seek(0)
+        csv_obj = csv.DictReader(f=self.backend_file)
+        readed_data = []
+        count_rows = 0
+        for row in csv_obj:
+            readed_data.append(row)
+            count_rows += 1
+        if close_file:
+            self.backend_file.close()
+        # return list witch dicts
+        return self.convert_to_dict(readed_data), count_rows
+
+    def save_to_csv(self, dict_data:dict) -> list:
+        fieldnames = list(dict_data.keys())
+        csv_obj = csv.DictWriter(f=self.backend_file,
+                                 fieldnames=fieldnames)
+        flag, _ = self.read_csv()
+        if not flag:
+            csv_obj.writeheader()
+            print('file are empty!!')
+        else:
+            print('file contain data')
+        csv_obj.writerow(dict_data)        
+        converted_data, _ = self.read_csv(close_file=True)
+        return converted_data
+
+
+class HandlerCsv(HandlerSQL, FileHandler):
+
+	TRIGGER_HOURS = ['08:00', '10:00','14:00','16:00','22:00','02:00']	
+
+	def save_temp_to_csv_handler(self, path, full_time):
+		date, current_time = full_time.split(',')	
+		#fetch dict with temp and humidity for every room 	
 		temperature_data = self.fetch_all_data_from_temp(temperature_dict=True)
-
+		
 		for trigger_time in self.TRIGGER_HOURS:
 			# date = self.convert_to_str(datetime.datetime.now())
-			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} date: {date}' )			
+			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} hour: {trigger_time}' )			
 			if trigger_time == current_time:			
 				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
-				self.save_to_file_csv(file_path=self.CSV_file, data=temperature_data, hour=trigger_time, date=date)
+				self.save_to_file_csv(path=path, data=temperature_data, hour=trigger_time, date=date)
 				print(f'{trigger_time}ZAPISANO DO CSV')
 
 
@@ -486,29 +546,16 @@ class HandlerCsv(HandlerSQL):
 		except:
 			return False
 
-	def save_to_file_csv(self, file_path, data, hour, date):
+	def save_to_file_csv(self, path:str, data:dict, hour:str, date:str):
 		if any(1 for value in data.values() if type(value) == dict):
 			data = {name: d_obj['temp'] for name, d_obj in data.items()}
 		data_with_date = {'date': date}
 		data_with_date['hour'] = hour
 		for room, temp in data.items():
 			data_with_date[room] = temp
-
-		#this flag check if we have created hader in csv file			
-		add_header_flag = self.read_from_csv(file_path, header=True)
-
-		with open(file_path, 'a') as file:
-			fieldnames = data_with_date.keys()
-			df = csv.DictWriter(f=file, fieldnames=fieldnames,)
-			if add_header_flag:
-				df.writerow(data_with_date)
-			else:
-				df.writeheader()
-				df.writerow(data_with_date)
-
-	def delete_file(self, file_path):
-		os.remove(file_path)
-		return os.path.exists(file_path)
+		backend_file = FileHandler(path=path)
+		csv_obj = CSV_Class(backend_file=backend_file.save_to_file())			
+		csv_obj.save_to_csv(dict_data=data_with_date)
 
 
 ############################# for numpy #############################
@@ -555,17 +602,3 @@ class HandlerCsv(HandlerSQL):
 
 if __name__ == '__main__':
 	obj = HandletFile()
-	path = obj.STATIC_PATH
-   # print(obj.create_container(obj.STATIC_PATH))	
-	sample = {'ON':'20:30','OFF':'11:23'}
-	second_sample = {'temp1':23, 'temp2':21, 'temp3':90}
-	third_sample = {'sockets': {'ON': '20:30', 'OFF': '11:23'}, 'temps': {'temp2': 21, 'temp1': 23, 'temp3': 90}}
-	# obj.save_to_json(obj.STATIC_PATH, third_sample)
-	# print(obj.load_from_json(obj.STATIC_PATH, key='soda'))
-   # obj.update_file(path, 'temps', second_sample)
-   # print(obj.delete_data_from_file(path, 'temps'))
-   # print(obj.search_key(d=third_sample, s_key='temp3'))
-   # print(obj.search_requr(d=third_sample, s_key='ON'))
-   #  obj.update_file(obj.STATIC_PATH, 'sockets', {'ON': '21:30', 'OFF': '0:00'})
-
-	# print(obj.create_container(obj.STATIC_PATH))
