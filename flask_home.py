@@ -6,21 +6,16 @@ from logic_script import virtual_relay, save_to_file, dht_handler
 app = Flask(__name__)
 print(os.getcwd())
 TEMP_KEY = 'temps'
-
-save_to_file_obj = save_to_file.HandlerFile()
-DATA_PATH = save_to_file_obj.STATIC_PATH
+save_to_file_obj = save_to_file.HandlerCsv()
 SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
-dht_handler_obj = dht_handler.DHT_Handler(
-		data_path=DATA_PATH,
+CSV_file_path = save_to_file_obj.STATIC_AGREGATE_TEMPERATURE
+dht_handler_obj = dht_handler.DHT_Handler(		
 		sensors_path= SENSOR_PATH,				
 		file_obj=save_to_file_obj)
 SQL_obj = dht_handler_obj.SQL_obj
 virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj, 
 												SQL_obj=SQL_obj)
-#create container to data
-
-
 
 class MyExceptions(Exception):
 	pass
@@ -137,9 +132,8 @@ def recive_current_time():
 	current_date, current_time = full_time.split(',')	
 	if request.method == 'POST':
 		print('Aktualna godzina ze strony: {}'.format(request.data.decode('ascii')))	      
-		virtual_relay_obj.switch_handler(current_time=current_time)
-		save_to_file.HandlerCsv().save_temp_to_csv_handler(
-			full_time=full_time)		
+		virtual_relay_obj.switch_handler(current_time=current_time)		
+		save_to_file_obj.save_temp_to_csv_handler(path=CSV_file_path, full_time=full_time)		
 		return 'ok'
 	else:
 		# send date to site 
