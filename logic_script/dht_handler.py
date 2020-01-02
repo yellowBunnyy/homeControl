@@ -12,9 +12,8 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, data_path, sensors_path, file_obj):
+	def __init__(self, sensors_path, file_obj):
 		
-		self.data_path = data_path
 		self.sensors_path = sensors_path				
 		# file obj here is save_to_file module
 		self.file_obj = file_obj
@@ -44,8 +43,8 @@ class DHT_Handler(Container):
 	
 
 	
-	def __init__(self, data_path=p1_data, sensors_path=p2_sensors, file_obj=obj_save_file):
-		super().__init__(data_path, sensors_path, file_obj)
+	def __init__(self, sensors_path=p2_sensors, file_obj=obj_save_file):
+		super().__init__(sensors_path, file_obj)
 		self.SQL_obj = save_to_file.HandlerSQL()
 		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
 		self.names_and_pins_default = file_obj.names_and_pins_default
@@ -55,10 +54,7 @@ class DHT_Handler(Container):
 		# this method return dict include all room_names as key and dict as value where
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
-		data_from_sensor_file = self.file_obj.load_from_json(self.sensors_path)
-		# pins_names_in_dict = SQL_obj.fetch_all_data_from_temp()
-
-		# data_from_file = self.file_obj.load_from_json(self.data_path, 'temps')
+		data_from_sensor_file = self.file_obj.load_from_json(self.sensors_path)			
 		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
 
 		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, 
@@ -137,9 +133,7 @@ class DHT_Handler(Container):
 
 			# this -> int_token_from_db variable represen how much we have tokens in sensor
 			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)
-			# val + 1 increment token value
-			# tokens_int = tuple(val + 1 if room_name == sensor_name else val 
-			# 					for room_name, val in dict_obj.items())
+			# val + 1 increment token value	
 
 			tokens_int = ()
 			for room_name, val in dict_obj.items():
@@ -167,8 +161,7 @@ class DHT_Handler(Container):
 		else:
 			#update all temps and humidity									
 			data = {name: round(value,1) if value != None else value 
-					for name, value in zip(['temp','humidity'], readed_data[::-1])}
-			# self.file_obj.update_file(path=self.data_path, key='temps', key2=sensor_name, content=data)
+					for name, value in zip(['temp','humidity'], readed_data[::-1])}			
 			remove_token_error(sensor_name=sensor_name)						
 			return data
 	
