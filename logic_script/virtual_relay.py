@@ -104,12 +104,10 @@ class Relays_class(Dioda, TimeConvertet):
 	'''DISCRIPTION:
 	'''
 
-	def __init__(self, obj=save_to_file_obj, SQL_obj=True ):
+	def __init__(self, obj=save_to_file_obj):
 		
 		self.save_to_file = obj
-		self.LIGHTING_PATH = obj.STATIC_LIGHTING_PATH
-		self.data_path = obj.STATIC_PATH
-		self.SQL_obj = SQL_obj
+		self.LIGHTING_PATH = obj.STATIC_LIGHTING_PATH		
 
 	def relay(self, status, pin=None):
 		if status:
@@ -241,19 +239,18 @@ class Relays_class(Dioda, TimeConvertet):
 			# be careful here HARDCODING SCRIPT
 			if name == 'sockets':
 				data = dict(zip(['ON', 'OFF'],
-								self.SQL_obj.fetch_all_data_from_sockets(row=1)))
+								self.save_to_file.fetch_all_data_from_sockets(row=1)))
 				# print(data,'W relay!!')
 			elif name == "heat_switch":
 				data = dict(zip(['ON', 'OFF'],
-								self.SQL_obj.fetch_all_data_from_sockets(row=2)))
+								self.save_to_file.fetch_all_data_from_sockets(row=2)))
 			elif name == 'heats':
-				data_db = self.SQL_obj.fetch_data_from_tokens(row=2, show_dict=True)	
+				data_db = self.save_to_file.fetch_data_from_tokens(row=2, show_dict=True)	
 				data = {room: val for room, val in data_db.items() 
 						if room not in ["WC", "outside"]}
 			else:
-				data = self.save_to_file.load_from_json(path=self.data_path, key=name)
-
-			
+				data = self.save_to_file.fetch_all_data_from_temp(temperature_dict=True)
+							
 			if name in ['heats','temps']:
 				to_compare += [data]
 				if pin:
