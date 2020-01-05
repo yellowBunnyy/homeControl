@@ -1,9 +1,7 @@
 import time, sys, os, Adafruit_DHT as dht
 from logic_script import save_to_file
 from time import sleep
-##################fast get to paths######################### 
-p1_data = save_to_file.HandlerFile().STATIC_PATH
-p2_sensors = save_to_file.HandlerFile().STATIC_SENSOR_PATH
+##################fast get to paths#########################
 obj_save_file = save_to_file.HandlerFile()
 ############################################################
 class MyExceptions(Exception):
@@ -12,26 +10,21 @@ class MyExceptions(Exception):
 
 class Container():	
 
-	def __init__(self, sensors_path, file_obj):
-		
-		self.sensors_path = sensors_path				
-		# file obj here is save_to_file module
+	def __init__(self, file_obj=obj_save_file):		
 		self.file_obj = file_obj
-		# self.file_obj.create_container(self.sensors_path)
-
 
 	# def load_default(self):
 	# 	names_container_default = {'salon': 7, 'maly_pokoj': 12, 'kuchnia': 16, 'warsztat': 20, 'wc': 8,
 	# 							   'na_zewnatrz': 4}
 	# 	self.file_obj.save_to_json(self.sensors_path, names_container_default)
 
-	def add_sensor(self, sensor_name, pin):
-		self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content= pin)
-		return 'sensor {} was created'.format(sensor_name)
+	# def add_sensor(self, sensor_name, pin):
+	# 	self.file_obj.update_file(path=self.sensors_path, key=sensor_name, content= pin)
+	# 	return 'sensor {} was created'.format(sensor_name)
 
-	def remove_sensor(self, sensor_name):
-		self.file_obj.delete_data_from_file(self.sensors_path, sensor_name)
-		return 'sensor {} was remove'.format(sensor_name)
+	# def remove_sensor(self, sensor_name):
+	# 	self.file_obj.delete_data_from_file(self.sensors_path, sensor_name)
+	# 	return 'sensor {} was remove'.format(sensor_name)
 
 
 class DHT_Handler(Container):
@@ -43,9 +36,9 @@ class DHT_Handler(Container):
 	
 
 	
-	def __init__(self, sensors_path=p2_sensors, file_obj=obj_save_file):
-		super().__init__(sensors_path, file_obj)
-		self.SQL_obj = save_to_file.HandlerSQL()
+	def __init__(self, file_obj):
+		super().__init__(file_obj)
+		self.SQL_obj = file_obj
 		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
 		self.names_and_pins_default = file_obj.names_and_pins_default
 
@@ -54,7 +47,7 @@ class DHT_Handler(Container):
 		# this method return dict include all room_names as key and dict as value where
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
-		data_from_sensor_file = self.file_obj.load_from_json(self.sensors_path)			
+		data_from_sensor_file = self.SQL_obj.fetch_all_data_from_temp(pin_dict=True)			
 		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
 
 		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, 
