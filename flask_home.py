@@ -7,15 +7,12 @@ app = Flask(__name__)
 print(os.getcwd())
 TEMP_KEY = 'temps'
 save_to_file_obj = save_to_file.HandlerCsv()
-SENSOR_PATH = save_to_file_obj.STATIC_SENSOR_PATH
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
 CSV_file_path = save_to_file_obj.STATIC_AGREGATE_TEMPERATURE
 dht_handler_obj = dht_handler.DHT_Handler(		
-		sensors_path= SENSOR_PATH,				
 		file_obj=save_to_file_obj)
-SQL_obj = dht_handler_obj.SQL_obj
-virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj, 
-												SQL_obj=SQL_obj)
+SQL_obj = save_to_file_obj
+virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
 
 class MyExceptions(Exception):
 	pass
