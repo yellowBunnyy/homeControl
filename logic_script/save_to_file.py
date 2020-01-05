@@ -7,9 +7,7 @@ class MyExceptions(Exception):
 
 
 class HandlerFile():
-
-	STATIC_PATH = os.path.join(os.getcwd(),'logic_script','data.json')
-	STATIC_SENSOR_PATH = os.path.join(os.getcwd(),'logic_script','sensor_list.json')
+	
 	STATIC_LIGHTING_PATH = os.path.join(os.getcwd(),'logic_script','lighting.json')	
 	STATIC_DB_ERRORS_PATH = os.path.join(os.getcwd(),'logic_script','errors_tokens_db.db')
 	STATIC_AGREGATE_TEMPERATURE = os.path.join(os.getcwd(),'logic_script','temp_data.csv')	
@@ -505,8 +503,7 @@ class HandlerCsv(HandlerSQL, FileHandler):
 		for trigger_time in self.TRIGGER_HOURS:
 			# date = self.convert_to_str(datetime.datetime.now())
 			print(f'{trigger_time} - {current_time} - {"correct" if trigger_time==current_time else "false"} hour: {trigger_time}' )			
-			if trigger_time == current_time:			
-				# data = self.load_from_json(path=self.STATIC_PATH, key='temps')
+			if trigger_time == current_time:				
 				self.save_to_file_csv(path=path, data=temperature_data, hour=trigger_time, date=date)
 				print(f'{trigger_time}ZAPISANO DO CSV')
 
