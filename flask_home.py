@@ -59,10 +59,6 @@ def temp_background() -> dict:
 		return json_data	
 	
 	
-			
-	
-
-
 @app.route('/lighting', methods = ['GET','POST'])
 def lighting_relays_loader():
 	return virtual_relay_obj.lighting_handler(request=request)
@@ -131,7 +127,7 @@ def recive_current_time():
 		print('Aktualna godzina ze strony: {}'.format(request.data.decode('ascii')))	      
 		virtual_relay_obj.switch_handler(current_time=current_time)		
 		save_to_file_obj.save_temp_to_csv_handler(path=CSV_file_path, full_time=full_time)		
-		return 'ok'
+		return 'ok'		
 	else:
 		# send date to site 
 		return current_date
