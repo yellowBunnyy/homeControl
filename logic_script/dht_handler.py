@@ -1,16 +1,20 @@
 import time, sys, os, Adafruit_DHT as dht
+print(os.getcwd())
 from logic_script import save_to_file
 from time import sleep
 ##################fast get to paths#########################
-obj_save_file = save_to_file.HandlerFile()
+obj_save_file = save_to_file.HandlerSQL()
 ############################################################
 class MyExceptions(Exception):
-	pass
+	def __init__(self, type_error, mgs):
+		self.type_error = type_error
+		self.mgs = mgs
+
 
 
 class Container():	
 
-	def __init__(self, file_obj=obj_save_file):		
+	def __init__(self, file_obj):		
 		self.file_obj = file_obj
 
 	# def load_default(self):
@@ -31,12 +35,12 @@ class DHT_Handler(Container):
 	'''This class is responsible for handle reading, 
 		saving to file date from sensors'''
 	
-	sensorDHT11 = dht.DHT11
-	sensorDHT22 = dht.DHT22
+	sensorDHT11 = 11
+	sensorDHT22 = 22
 	
 
 	
-	def __init__(self, file_obj):
+	def __init__(self, file_obj=obj_save_file):
 		super().__init__(file_obj)
 		self.SQL_obj = file_obj
 		self.table_name = self.SQL_obj.SQL_TABELS_NAMES[1]
@@ -48,56 +52,59 @@ class DHT_Handler(Container):
 		# key is temp and humidity and value is int 
 		# e.g {'salon': {'temp':20, 'humidity'}, 'maly_pokoj': {'temp':20, 'humidity'}, itd.}
 		data_from_sensor_file = self.SQL_obj.fetch_all_data_from_temp(pin_dict=True)			
-		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
-
+		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)		
 		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, 
-			data_from_file=data_from_file_temps_tbl) for sensor_name, pin in data_from_sensor_file.items()}
+			data_from_file=data_from_file_temps_tbl) for sensor_name, pin in data_from_sensor_file.items()}		
 		return dict_data_with_all_rooms_temp_and_humidity
 
-	def recognicion_device(self, pin:int=None, name:str=None, test_tuple1:tuple=None, test_tuple2:tuple=None):
+	def recognicion_device(self, pin:int=None, name:str=None):
 		'''This method may return three value:
 			- data in tuple,
 			- 10 in int obj
-			- False in bool obj'''		
-		if test_tuple1:
-			data_tuple = test_tuple1
+			- False in bool obj'''
+		if type(pin) == int and pin > 31:
+			raise MyExceptions(type_error=ValueError, mgs="pin are > 31")
+		elif type(pin) != int:		
+			raise MyExceptions(type_error=ValueError, mgs="pin are not int")
 		else:
-			data_tuple = dht.read_retry(sensor = self.sensorDHT11, pin=pin, retries=7, delay_seconds=1)
-		try:
-			return self.logic(data_tuple=data_tuple, sensor_name=name, pin=pin, test_tuple=test_tuple2)
-		except:
-			raise MyExceptions(f'cos poszlo nie tak!! {sys.exc_info()[1]}')
+			pass		
+		data_tuple = dht.read_retry(sensor = self.sensorDHT11, pin=pin, retries=7, delay_seconds=1)
+		if None in data_tuple:
+			print(f'{data_tuple} --> {name} --> DHT11')
+			return 10
+			# raise MyExceptions(type_error=ValueError, mgs=f"can't read humidity properly!!")
+		else:
+			return self.logic(data_tuple=data_tuple, sensor_name=name, pin=pin)
+		 
 
-	def logic(self, data_tuple, sensor_name=None, pin=None, test_tuple=None):
-		try:
-			# test for humidity
-			if data_tuple[0] == None:
-				print(f"{data_tuple} --> {sensor_name} can't read humidity properly!!")
-				return 10
-			# range test						 
-			elif 20 < data_tuple[0] <= 100 and -30 < data_tuple[1] <= 60:				
-				print(f'{data_tuple} --> {sensor_name}, device --> dht11')
-				return data_tuple				
-			else:
-				# here we get tuple with two value temp and humidity if are in range or 
-				# error code: 10 if one of value in tuple is our of range
-				return self.secondary_logic_to_check(sensor_name=sensor_name, pin=pin, test_tuple=test_tuple)
-		except:
-			print('OTHER ERROR in logic', sys.exc_info()[1])
-			return False
+	def logic(self, data_tuple, sensor_name=None, pin=None):
+		# try:
+		# range test						 
+		if 20 < data_tuple[0] <= 100 and -30 < data_tuple[1] <= 60:				
+			print(f'{data_tuple} --> {sensor_name}, device --> dht11')
+			return data_tuple				
+		else:
+			print(f"{data_tuple} --> {sensor_name} can't read humidity properly!! DHT11")
+			# here we get tuple with two value temp and humidity if are in range or 
+			# error code: 10 if one of value in tuple is our of range
+			return self.secondary_logic_to_check(sensor_name=sensor_name, pin=pin)
+		# except:
+		# 	# this exception are allways call when we have e.g. (30, None) in data_tuple
+		# 	# when first index is None
+		# 	raise MyExceptions(ValueError, 
+		# 		'brak danych na pierwszym indexie',
+		# 		f'{sys.exc_info()[1]}')
 
-	def secondary_logic_to_check(self, sensor_name, pin, test_tuple=None):
+	def secondary_logic_to_check(self, sensor_name:int=None, pin:int=None):
 		'''if logic method above cant recognize data from DHT11 sensor propertly try to
 			read data from sensor DHT22 and return output depend on result:
 			- data in tuple or
 			- code error 10 int '''
-		print(f'DHT22 method')
-		if test_tuple:
-			data = test_tuple		
-		else:
-			data = dht.read_retry(sensor=self.sensorDHT22, pin=pin, retries=7, delay_seconds=1)
+		print(f'DHT22 method')		
+			
+		data = dht.read_retry(sensor=self.sensorDHT22, pin=pin, retries=7, delay_seconds=1)			
 		# range test		
-		if data[0] != None and 20 < data[0] <= 100 and -30 < data[1] <= 60:
+		if data[0] != None and 20 < data[0] <= 100 and data[1] != None and -30 < data[1] <= 60:
 			print(f'{tuple(map(lambda x: round(x,2), data))} --> {sensor_name}, device --> dht22')
 			return data
 		else:
@@ -105,12 +112,7 @@ class DHT_Handler(Container):
 			print(f"{data} --> {sensor_name} can't read humidity properly!!")
 			return 10
 
-	
-	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict) -> dict:
-		'''method who create correct data form in allow range e.g 
-		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
-		 
-		def remove_token_error(sensor_name:str):
+	def remove_token_error(self, sensor_name:str):
 			'''This method remove all tokens from sensor when reads is OK'''
 			# below var have ref to sensor_names as key and token int as value
 			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)			
@@ -119,15 +121,13 @@ class DHT_Handler(Container):
 			self.SQL_obj.update_data_tokens(tokens_int=tokens_int, 
 												row=1)
 			print(f'all tokens was remove from {sensor_name}')			
+			return True
 
-
-		def add_token_error(sensor_name:str):
+	def add_token_error(self, sensor_name:str):
 			''' This methon add one token to sensor when it's somthing wrong with reads '''
-
 			# this -> int_token_from_db variable represen how much we have tokens in sensor
 			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)
 			# val + 1 increment token value	
-
 			tokens_int = ()
 			for room_name, val in dict_obj.items():
 				# print(room_name, val)
@@ -142,20 +142,26 @@ class DHT_Handler(Container):
 												row=1)			
 			print(f'Token was added to {sensor_name} token info {int_token_from_db}!!')				
 			if int_token_from_db >=10:
-				print(f'błąd w {sensor_name}!!!!!!!')				
+				print(f'błąd w {sensor_name}!!!!!!!')
+			return True				
 
+	
+	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict) -> dict:
+		'''method who create correct data form in allow range e.g 
+		{temp: readed < 100, humidity: 20 < readed < 95) and return that data'''
+		 
 		readed_data = self.recognicion_device(pin=pin, name=sensor_name)
 
-		if not readed_data or readed_data == 10:			
-			add_token_error(sensor_name=sensor_name)
+		if not readed_data or readed_data == 10:
+			self.add_token_error(sensor_name=sensor_name)
 			print('from file!!!', data_from_file[sensor_name])
 			return data_from_file[sensor_name]
 
 		else:
 			#update all temps and humidity									
 			data = {name: round(value,1) if value != None else value 
-					for name, value in zip(['temp','humidity'], readed_data[::-1])}			
-			remove_token_error(sensor_name=sensor_name)						
+					for name, value in zip(['temp','humidity'], readed_data[::-1])}
+			self.remove_token_error(sensor_name=sensor_name)
 			return data
 	
 
@@ -176,8 +182,9 @@ class SimpleyTesting(DHT_Handler):
 	'''DESCRIPTION:
 		Class created to test single sensors '''
 
-	def single_sensor(self, sensor, pin, name='default'):
-		print(f'{name} ---> {dht.read_retry(sensor=sensor, pin=pin, retries=3, delay_seconds=1)}')
+	def single_sensor(self, sensor:int, pin:int, name='default'):
+		'''set sensor 11 or 22. dht11 is 11, dht22 i 22'''
+		rint(f'{name} ---> {dht.read_retry(sensor=sensor, pin=pin, retries=3, delay_seconds=1)}')
 
 	def loop_signle_sensor(self, sensor=11, pin=7, delay=3, name='salon'):
 		'''Deafault Setings:
@@ -212,7 +219,6 @@ class SimpleyTesting(DHT_Handler):
 			print(f'{name} --> {self.recognicion_device(pin)}')
 			sleep(5)	
 
-if __name__ == '__main__':
-	
+if __name__ == '__main__':	
 	instance = DHT_Handler()
-	instance.check_all_to_flask()
+	
