@@ -54,7 +54,7 @@ class DHT_Handler(Container):
 		data_from_sensor_file = self.SQL_obj.fetch_all_data_from_temp(pin_dict=True)			
 		data_from_file_temps_tbl = self.SQL_obj.fetch_all_data_from_temp(temperature_dict=True)		
 		dict_data_with_all_rooms_temp_and_humidity = {sensor_name: self.to_flask(pin=pin, sensor_name=sensor_name, 
-			data_from_file=data_from_file_temps_tbl) for sensor_name, pin in data_from_sensor_file.items()}		
+			data_from_file=data_from_file_temps_tbl) for sensor_name, pin in data_from_sensor_file.items()}
 		return dict_data_with_all_rooms_temp_and_humidity
 
 	def recognicion_device(self, pin:int=None, name:str=None):
@@ -120,30 +120,40 @@ class DHT_Handler(Container):
 								for room_name, val in dict_obj.items())						
 			self.SQL_obj.update_data_tokens(tokens_int=tokens_int, 
 												row=1)
-			print(f'all tokens was remove from {sensor_name}')			
-			return True
+			print(f'all tokens was remove from {sensor_name}')
+			#return tuple with restarted tokens value			
+			return tokens_int
 
 	def add_token_error(self, sensor_name:str):
-			''' This methon add one token to sensor when it's somthing wrong with reads '''
-			# this -> int_token_from_db variable represen how much we have tokens in sensor
+			''' This methon add one token to sensor when it's somthing wrong with reads '''			
 			dict_obj = self.SQL_obj.fetch_data_from_tokens(row=1, show_dict=True)
-			# val + 1 increment token value	
 			tokens_int = ()
+			input_name_correct_flag = False
+			input_allowe_value_flag = True
 			for room_name, val in dict_obj.items():
 				# print(room_name, val)
-				if room_name == sensor_name:
-					val += 1
-					tokens_int += (val,)
-					int_token_from_db = val
+				if type(val) == int:
+					if room_name == sensor_name:
+						# val + 1 increment token value
+						val += 1
+						tokens_int += (val,)
+						added_token_val = val
+						input_name_correct_flag = True										
+					else:
+						tokens_int += (val,)
 				else:
-					tokens_int += (val,)
+					print('!!WARNING!!\ntoken is not integer!')
+					tokens_int += (None,)
+					input_allowe_value_flag = False			
 			 
 			self.SQL_obj.update_data_tokens(tokens_int=tokens_int,
-												row=1)			
-			print(f'Token was added to {sensor_name} token info {int_token_from_db}!!')				
-			if int_token_from_db >=10:
-				print(f'błąd w {sensor_name}!!!!!!!')
-			return True				
+												row=1)
+			
+			if dict_obj and input_allowe_value_flag and input_name_correct_flag :
+				print(f'Token was added to {sensor_name} token info {added_token_val}!!')				
+				if added_token_val >=10:
+					print(f'błąd w {sensor_name}!!!!!!!')
+			return tokens_int				
 
 	
 	def to_flask(self, pin:int, sensor_name:str, data_from_file:dict) -> dict:
@@ -170,7 +180,8 @@ class DHT_Handler(Container):
 			key is temp and humidity and value is int 
 			e.g {'salon': {'temp':20, 'humidity':40}, 'maly_pokoj': {'temp':20, 'humidity':06}, itd.}
 			AND update temperature and humidity in table '''	
-		container = self.dict_with_keys_as_room_names_and_dict_as_value()
+		container = self.dict_with_keys_as_room_names_and_dict_as_value()		
+		#unpack container dict to temp values as tuple and humidity values as tupe
 		temps, humidity = [tuple(value[t] for key, value in container.items()) 
 							for t in ['temp','humidity']]			
 		self.SQL_obj.update_data_in_temperature(temp_or_humidity=temps)
@@ -184,41 +195,24 @@ class SimpleyTesting(DHT_Handler):
 
 	def single_sensor(self, sensor:int, pin:int, name='default'):
 		'''set sensor 11 or 22. dht11 is 11, dht22 i 22'''
-		rint(f'{name} ---> {dht.read_retry(sensor=sensor, pin=pin, retries=3, delay_seconds=1)}')
-
-	def loop_signle_sensor(self, sensor=11, pin=7, delay=3, name='salon'):
-		'''Deafault Setings:
-			sensor = 11
-			pin = 7 tj. salon
-			delay = 3
-			name = salon
-		'''
-		while 1:
-			time.sleep(delay)
+		if sensor in [11,22] and 0 < pin < 31:
 			print(f'{name} ---> {dht.read_retry(sensor=sensor, pin=pin, retries=3, delay_seconds=1)}')
-		
-
-	def all_sensors_in_row(self, sensors_dict):			
-		for name_sensor, pin in sensors_dict.items():
-			# print(name_sensor, pin)
-			if name_sensor == 'na_zewnatrz':
-				print(f'{name_sensor}--->{[round(val,2) for val in dht.read_retry(sensor= self.sensorDHT22, pin= pin, retries= 15, delay_seconds= 1)]}')
+		else:
+			if sensor not in [11,22]:
+				raise MyExceptions(type_error=ValueError, mgs='sensor allowe 11 or 22')
 			else:
-				print(f'{name_sensor}--->{dht.read_retry(sensor= self.sensorDHT11, pin= pin, retries= 15, delay_seconds= 1)}')
+				raise MyExceptions(type_error=ValueError, mgs='pin must be 0 < pin < 30')
+	
+	def all_sensors_in_row(self, sensors_dict):		
+		for name_sensor, pin in sensors_dict.items():			
+			if name_sensor == 'outside':
+				print(f'{name_sensor}--->{[round(val,2) for val in dht.read_retry(sensor = 22, pin = pin, retries = 15, delay_seconds = 1)]}')
+			else:
+				print(f'{name_sensor}--->{dht.read_retry(sensor = 11, pin = pin, retries = 15, delay_seconds= 1)}')
 		else:
 			print('-'*10)
 
-	def check_all_to_flask(self):		
-		for name, pin in self.names_container_default.items():
-			print(name, pin)
-			print(self.to_flask(pin))
-
-
-	def check_recognicion_device(self):
-		for name, pin in self.names_container_default.items():
-			print(f'{name} --> {self.recognicion_device(pin)}')
-			sleep(5)	
-
 if __name__ == '__main__':	
-	instance = DHT_Handler()
+	# instance = DHT_Handler()
+	pass
 	
