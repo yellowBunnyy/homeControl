@@ -3,7 +3,13 @@ os.chdir('/home/pi/Desktop/env/fl/src')
 print(os.getcwd())
 
 class MyExceptions(Exception):
-	pass
+	def __init__(self, message, error):		
+		super().__init__(message)
+		self.message = message
+		self.error = error
+	def __str__(self):
+		return f'mgs = {self.message}, exceptionType = {self.error}'
+	
 
 
 class HandlerFile():
@@ -18,22 +24,17 @@ class HandlerFile():
 							'WC': 8,
 							'outside': 4}
 	
-	def create_container(self, path, content=None):
-		file_name = path.split('/')[-1]
-		# print(file_name)
-		if self.file_existance(path, file_name):
+	def create_container(self, path, content=None):					
+		exists = os.path.isfile(path)
+		if exists:
 			return 'container exist!!'
 		else:
+			if not os.path.splitext(path)[-1]:
+				raise MyExceptions(message='path are directory not file', error=FileExistsError)
 			with open(path, 'w') as file:
 				file.write(json.dumps(content if content else {}))
 			return 'container was created!!'
-
-	def file_existance(self, path, file_name='data.json'):
-		folder = os.path.dirname(path)
-		if file_name in os.listdir(folder):
-			return True
-		else:
-			return False
+	
 
 	def save_to_json(self, path, content):
 		with open(path, 'w') as file:
@@ -44,10 +45,12 @@ class HandlerFile():
 	
 	def load_from_json(self, path, key=None):
 		'''function return dict obj'''
+		pattern = r'{.*}'
 		with open(path, mode='r') as file:
 			json_content = file.read()
-			if not json_content:
-				raise MyExceptions(f'Brak danych w json_content!!! PATH --> {path}')
+			matched = re.match(pattern, json_content)
+			if not matched:
+				raise MyExceptions(message=f'Brak danych w json_content!!! PATH --> {path}', error=ValueError)
 			else:
 				content = json.loads(json_content)           
 		if key:
@@ -56,31 +59,38 @@ class HandlerFile():
 				return content[key]
 			except KeyError:
 				print(f'klucz do content == {key}')
-				raise MyExceptions(f'Brak klucza w load from \
-					json PATH klucz do content {key} --> {path}')
+				raise MyExceptions(message=f'Brak klucza w load from \
+					json PATH klucz do content {key} --> {path}', error=ValueError)
 		else:
 			# print('data was load without key {}'.format(content))
 			return content
 
 
 	def update_file(self, path, key, content, key2=None):
+		if not os.path.exists(path):			
+			raise MyExceptions(message='path does not exist', error=FileNotFoundError)
 		dict_obj = self.load_from_json(path)
+		if not key in dict_obj or not content:
+			raise MyExceptions(message='check key or content', error=KeyError)		
 		if key2:
 			dict_obj[key][key2] = content
 		else:
 			dict_obj[key] = content
-		self.save_to_json(path, dict_obj)
-		return 'container was updated {}'.format(dict_obj)
+		self.save_to_json(path, dict_obj)		
+		print('container was updated {}'.format(dict_obj))				
+		return dict_obj[key][key2] if key2 else dict_obj[key]
 
 	
 	def delete_data_from_file(self, path, key):
-		dict_obj = self.load_from_json(path)
-		try:
-			deleted_val = dict_obj.pop(key)
+		if not os.path.exists(path):
+			raise MyExceptions(message=f'{path} does not exists!', error=FileExistsError)
+		dict_obj = self.load_from_json(path)		
+		if key in dict_obj:
+			dict_obj.pop(key)
 			self.save_to_json(path, dict_obj)
-			return 'key {} with content {} was deleted'.format(key, deleted_val)
-		except KeyError:
-			return 'key {} is not in dict'.format(key)
+			return dict_obj
+		else: 
+			raise MyExceptions(message=f'{key} not found in dict_obj', error=KeyError)
 		
 	
 	def search_key(self, d, s_key):        
@@ -397,6 +407,7 @@ class HandlerSQL(HandlerFile):
 				return dict_obj[room_name]
 			#return list
 			elif show_dict:
+				# show dict with room's name's as key and value as counted tokens
 				return dict_obj
 			return all_data[row-1][1:]
 		#return list
