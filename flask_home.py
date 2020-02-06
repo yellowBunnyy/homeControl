@@ -45,6 +45,7 @@ def temp_background() -> dict:
 	Next send response to site in this case is list of dictionary with temperatures and huminidity'''
 		
 	temperature_in_db = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
+	# import wdb; wdb.set_trace()
 	if type(temperature_in_db) == dict:
 		json_data = json.dumps(temperature_in_db)
 		return json_data
