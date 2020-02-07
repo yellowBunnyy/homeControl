@@ -1,6 +1,6 @@
 from logic_script import dht_handler, save_to_file, virtual_relay
 room_names = save_to_file.HandlerFile().room_names
-import pytest, flask_home, os, Adafruit_DHT, flask, json, random
+import pytest, flask_home, os, Adafruit_DHT, flask, json, random, sqlite3
 from unittest.mock import patch
 from unittest.mock import Mock
 
@@ -653,16 +653,30 @@ def test_search_key_raise_err(input_data, handler_file_obj):
 ##### HandlerSQL class
 
 
+# create backend db file
+@pytest.fixture(name='backend_db_file')
+def create_db_file():
+	db_path = r'/home/pi/Desktop/env/fl/src/test_db.db'
+	with open(db_path, 'w') as f:
+		f.write('')
+		yield db_path
+	os.remove(db_path)
 
 # create artificial data_base
-@pytest.fixture(name='create_and_destroy_db')
-def create_data_base():
-	pass
+@pytest.fixture(name='cursor_db')
+def create_data_base(backend_db_file):
+	# create connection and cursor to menage dataBase
+	conn = sqlite3.connect(backend_db_file)
+	cursor = conn.cursor()
+	yield cursor
+	conn.close()
+	
 
-# initial database
+# recognizon table exists 
 
-def test_initial_table_in_db():
-	pass
+def test_recognize_existance_table(cursor_db, SQL_obj):
+	from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor_db, table_name='default')
+	assert from_method
 
 
 	
