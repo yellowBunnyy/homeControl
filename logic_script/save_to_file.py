@@ -93,17 +93,23 @@ class HandlerFile():
 			raise MyExceptions(message=f'{key} not found in dict_obj', error=KeyError)
 		
 	
-	def search_key(self, d, s_key):        
-		for key_1, val_1 in d.items():
-			if key_1 == s_key:
-				return 'finded {}'.format(key_1)
+	def recur_search_key(self, d, s_key):
+		if type(d) != dict:
+			raise MyExceptions(message=f'{d} if not dict obj', error=TypeError)
+		f_key = []
+		for key, val in d.items():
+			print(f'key {key} val {val}')
+			if type(val) == dict:
+				if key == s_key:
+					print('puted to ans')
+					f_key.append(key)
+				f_key += self.recur_search_key(d=val, s_key=s_key)
 			else:
-				if type(val_1) == dict:
-					for key_2, val_2 in val_1.items():
-						if key_2 == s_key:
-							return 'finded {}'.format(key_2)
+				if key == s_key:
+					print('puted to ans')
+					f_key.append(d)
 		else:
-			return 'nothing here'
+			return f_key
 	
 
 class HandlerSQL(HandlerFile):
@@ -174,8 +180,8 @@ class HandlerSQL(HandlerFile):
 					print(f'table {table_name} EXISTS')
 			else:
 				return {'rows_amount':rows_amount,
-					 	'table_names': list(SQL_dict.keys()),
-					 	}		
+						'table_names': list(SQL_dict.keys()),
+						}		
 
 
 	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
@@ -443,63 +449,63 @@ class HandlerSQL(HandlerFile):
 ## BACKEND FILE
 	
 class FileHandler:
-    def __init__(self, path:str):
-        self.path = path
-        print(f'backend file path: {path}')
+	def __init__(self, path:str):
+		self.path = path
+		print(f'backend file path: {path}')
 
-    def open_file(self):
-        return open(self.path, 'r')
+	def open_file(self):
+		return open(self.path, 'r')
 
-    def save_to_file(self):
-        return open(self.path, 'a+')
+	def save_to_file(self):
+		return open(self.path, 'a+')
 
-    def delete_file(self):
-        os.remove(path=self.path)
-        print('file was deleted')
+	def delete_file(self):
+		os.remove(path=self.path)
+		print('file was deleted')
 
-    def close_f(self, obj):
-        print('file was closed')
-        obj.close()
+	def close_f(self, obj):
+		print('file was closed')
+		obj.close()
 
 
 class CSV_Class:
 	   
-    # backend file are file obj
-    def __init__(self, backend_file):
-        self.backend_file = backend_file
+	# backend file are file obj
+	def __init__(self, backend_file):
+		self.backend_file = backend_file
 
-    def convert_to_dict(self, orderedDict_list: list) -> list:
-        f = lambda data: {key: int(val) if re.match(r'^[0-9]+$', val) else val
-                          for key, val in data.items()}
-        list_with_dicts = list(map(f, orderedDict_list))
-        return list_with_dicts
+	def convert_to_dict(self, orderedDict_list: list) -> list:
+		f = lambda data: {key: int(val) if re.match(r'^[0-9]+$', val) else val
+						  for key, val in data.items()}
+		list_with_dicts = list(map(f, orderedDict_list))
+		return list_with_dicts
 
-    def read_csv(self, close_file:bool=False) -> list:
-        self.backend_file.seek(0)
-        csv_obj = csv.DictReader(f=self.backend_file)
-        readed_data = []
-        count_rows = 0
-        for row in csv_obj:
-            readed_data.append(row)
-            count_rows += 1
-        if close_file:
-            self.backend_file.close()
-        # return list witch dicts
-        return self.convert_to_dict(readed_data), count_rows
+	def read_csv(self, close_file:bool=False) -> list:
+		self.backend_file.seek(0)
+		csv_obj = csv.DictReader(f=self.backend_file)
+		readed_data = []
+		count_rows = 0
+		for row in csv_obj:
+			readed_data.append(row)
+			count_rows += 1
+		if close_file:
+			self.backend_file.close()
+		# return list witch dicts
+		return self.convert_to_dict(readed_data), count_rows
 
-    def save_to_csv(self, dict_data:dict) -> list:
-        fieldnames = list(dict_data.keys())
-        csv_obj = csv.DictWriter(f=self.backend_file,
-                                 fieldnames=fieldnames)
-        flag, _ = self.read_csv()
-        if not flag:
-            csv_obj.writeheader()
-            print('file are empty!!')
-        else:
-            print('file contain data')
-        csv_obj.writerow(dict_data)        
-        converted_data, _ = self.read_csv(close_file=True)
-        return converted_data
+	def save_to_csv(self, dict_data:dict) -> list:
+		fieldnames = list(dict_data.keys())
+		csv_obj = csv.DictWriter(f=self.backend_file,
+								 fieldnames=fieldnames)
+		flag, _ = self.read_csv()
+		if not flag:
+			csv_obj.writeheader()
+			print('file are empty!!')
+		else:
+			print('file contain data')
+		csv_obj.writerow(dict_data)        
+		converted_data, _ = self.read_csv(close_file=True)
+		return converted_data
 
 
 class HandlerCsv(HandlerSQL, FileHandler):
