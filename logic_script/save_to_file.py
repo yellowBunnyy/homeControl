@@ -125,17 +125,18 @@ class HandlerSQL(HandlerFile):
 		'''Here we initial conection to database and create
 		cursor object form connect object.'''
 		# create connection with db and create cursor
-		db_file = self.STATIC_DB_ERRORS_PATH
-		if not db_file:
-			raise MyErrors('Please insert DataBase file path!!')
-		else:
-			self.db_file = db_file
-			self.conn = sqlite3.connect(db_file, check_same_thread=False)
-			self.c = self.conn.cursor()
-			print('have connetction')
-			# this var have reference to dict with key as table_name and value as
-			# list with method from SQL_Handlet class
-			self.initial_table_in_db()
+		# db_file = self.STATIC_DB_ERRORS_PATH
+		# if not db_file:
+		# 	raise MyErrors('Please insert DataBase file path!!')
+		# else:
+		# 	self.db_file = db_file
+		# 	self.conn = sqlite3.connect(db_file, check_same_thread=False)
+		# 	self.c = self.conn.cursor()
+		# 	print('have connetction')
+		# 	# this var have reference to dict with key as table_name and value as
+		# 	# list with method from SQL_Handlet class
+		# 	self.initial_table_in_db()
+		pass
 			
 
 			
@@ -147,7 +148,7 @@ class HandlerSQL(HandlerFile):
 		SQL_dict = {
 		self.SQL_TABELS_NAMES[0]: [self.table_sockets,
 					self.insert_data_to_sockets_table,
-					('00:00','00:00')], 
+					('00:00','00:00')],
 		self.SQL_TABELS_NAMES[1]: 
 						[self.table_errors_tokens_and_seted_temperature,
 						self.insert_data_token_table,
@@ -184,12 +185,12 @@ class HandlerSQL(HandlerFile):
 						}		
 
 
-	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
+	def recognize_if_table_in_db_exist(self, cursor, table_name:str) -> bool:
 		'''Recognizon if table is in data base. If is return false
 			otherwise return true'''
 		# script search table which is input --> (table_name) arg this metchod
-		self.c.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
-		if self.c.fetchone():
+		cursor.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
+		if cursor.fetchone():
 			print('db exist --> flag :false')
 			return False
 		else:
