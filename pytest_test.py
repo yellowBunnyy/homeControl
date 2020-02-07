@@ -629,8 +629,40 @@ def test_delete_data_raise_err(input_data, handler_file_not_called, handler_file
 		handler_file_not_called.load_from_json.assert_called()
 		handler_file_not_called.save_to_json.assert_called()
 
+# search key
+@pytest.mark.parametrize('input_data, expected', (
+	([{'a':1, 'd': {'mama': 12, 'dama':200}, 'c': 23}, 'dama'], [{'mama': 12, 'dama':200}]),
+	([{'a':1, 'd': {'mama': 12, 'dama':200}, 'c': 23, 'dama':{'tak':1, 'nie':2}}, 'dama'], [{'mama': 12, 'dama':200}, 'dama']),
+	))
+def test_search_key(input_data, expected,  handler_file_obj):	
+	dict_container, s_key = input_data	
+	from_method = handler_file_obj.recur_search_key(d=dict_container, s_key=s_key)
+	assert from_method == expected
+
+@pytest.mark.parametrize('input_data', (
+	(['str here', 'any_key']),
+	([123, 'any_key']),
+
+	))
+def test_search_key_raise_err(input_data, handler_file_obj):
+	d_content, key = input_data
+	with pytest.raises(Exception):
+		from_method = handler_file_obj.recur_search_key(d=d_content, s_key=key)
+	
+
+##### HandlerSQL class
 
 
+
+# create artificial data_base
+@pytest.fixture(name='create_and_destroy_db')
+def create_data_base():
+	pass
+
+# initial database
+
+def test_initial_table_in_db():
+	pass
 
 
 	
