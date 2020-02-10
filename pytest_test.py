@@ -662,21 +662,67 @@ def create_db_file():
 		yield db_path
 	os.remove(db_path)
 
-# create artificial data_base
-@pytest.fixture(name='cursor_db')
-def create_data_base(backend_db_file):
+
+# create artificial data_base 
+@pytest.fixture(name='cursor_db', params=['without_table', 'with_table'])
+def create_data_base(request, backend_db_file):
 	# create connection and cursor to menage dataBase
 	conn = sqlite3.connect(backend_db_file)
-	cursor = conn.cursor()
-	yield cursor
+	cursor = conn.cursor()	
+	if request.param == 'without_table':
+		yield cursor, True
+	else:
+		sql = '''CREATE TABLE IF NOT EXISTS sockets (
+				id integer PRIMARY KEY,
+				turn_on text,
+				turn_off text);
+		'''
+		cursor.execute(sql)
+		yield cursor, False
 	conn.close()
-	
 
-# recognizon table exists 
 
+# recognizon table exists
 def test_recognize_existance_table(cursor_db, SQL_obj):
-	from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor_db, table_name='default')
-	assert from_method
+	cursor, expected = cursor_db
+	table_name = 'sockets'	
+	from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
+	assert from_method == expected
+
+@pytest.mark.parametrize('input_data', (
+	([23, 'somthing']),
+	([sqlite3.Cursor, 412])
+	))
+def test_recognize_existance_table_raise_err(input_data, SQL_obj):
+	cursor, table_name = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
+
+# fetch columns names
+
+def test_fetch_column_names(cursor_db, SQL_obj):
+	cursor, flag = cursor_db
+	table_name = 'sockets'
+	if not flag:
+		from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+		expected = ['id','turn_on', 'turn_off']
+		assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(['somestring', ['abcd']]),
+	([sqlite3.Cursor, ['abcd']]),
+	([sqlite3.Cursor, 'some_table']),
+	))
+def test_fetch_column_names_raise_err(input_data, cursor_db, SQL_obj):
+	cursor, flag = cursor_db
+	second_cursor, table_name = input_data
+	with pytest.raises(Exception):
+		if not flag:
+			from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+		else:
+			from_method = SQL_obj.fetch_column_names(cursor=second_cursor, table_name=table_name)
+	
 
 
 	
