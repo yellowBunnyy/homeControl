@@ -197,9 +197,9 @@ class HandlerSQL(HandlerFile):
 			print('db does not exist --> flag: true')
 			return True
 
-	def fetch_column_names(self, table_name:str)-> list:
+	def fetch_column_names(self, cursor, table_name:str)-> list:
 		'''This method fetch comumns names and return them in list'''
-		column_list = self.c.execute(f'''SELECT * from {table_name}''')
+		column_list = cursor.execute(f'''SELECT * from {table_name}''')
 		return [row[0] for row in column_list.description]
 
 # CREATE TABLE
