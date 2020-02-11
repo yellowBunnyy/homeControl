@@ -238,26 +238,25 @@ class HandlerSQL(HandlerFile):
 				outside integer);'''
 		return self.SQL_TABELS_NAMES[1], sql
 
-	def create_table(self, table_sheet:tuple):
+	def create_table(self, cursor, table_sheet:tuple):
 		'''Create table in data base. Where first value in tuple is table name
 		second are sql sheet to create table'''
 		# create new table
-		cursor = self.conn.cursor()
 		cursor.execute(table_sheet[1])
 		print('table was created --> {}'.format(table_sheet[0]))
-
+		return True
 
 ### INSERT
 
-	def insert_data_to_temperature(self, tuple_int:tuple):
+	def insert_data_to_temperature(self, cursor, tuple_int:tuple):
+		'''tuple: tuple with 5 int's temperature value '''
 		sql = '''INSERT INTO 'temperature_humidity' (
 				salon,
 				maly_pokoj,
 				kuchnia,
 				WC,
 				outside)
-				VALUES (?,?,?,?,?)'''
-		cursor = self.conn.cursor()
+				VALUES (?,?,?,?,?)'''		
 		cursor.execute(sql, tuple_int)
 		self.conn.commit()
 		print(f'data was added {tuple_int}')

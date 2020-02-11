@@ -96,77 +96,77 @@ def no_request(monkeypath):
 	## tbl temperature_humidity
 
 
-@pytest.mark.parametrize('expected',(
-	(dict),
-	(room_names),
-	))
-def test_fetched_data(expected, SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
-	if expected == dict:
-		assert type(data) == dict
-	else:
-		data = list(data.keys())                                                                                                                                                                                                                                                                                                                                                                                                                       
-		assert expected == data
+# @pytest.mark.parametrize('expected',(
+# 	(dict),
+# 	(room_names),
+# 	))
+# def test_fetched_data(expected, SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
+# 	if expected == dict:
+# 		assert type(data) == dict
+# 	else:
+# 		data = list(data.keys())                                                                                                                                                                                                                                                                                                                                                                                                                       
+# 		assert expected == data
 
-def test_initial_fetched_data(SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp()	
-	assert data
-
-
-def test_return_list(SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp()
-	assert type(data) == list
+# def test_initial_fetched_data(SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp()	
+# 	assert data
 
 
-def test_room_names_are_correct(SQL_obj):	
-	fetched_list_with_tuples = SQL_obj.fetch_all_data_from_temp()	
-	temps, humidity, _ =  [tup[1:] for tup in fetched_list_with_tuples]
-	list_with_temps_and_humidity = [{'temp':temp, 'humidity': hum} 
-									for temp, hum in zip(temps, humidity)]
-	ans = dict(zip(room_names, list_with_temps_and_humidity))
-	assert ans == SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
-
-def test_fetch_all_data_from_temp_return_choosen_row(SQL_obj):
-	method = SQL_obj.fetch_all_data_from_temp(row=3)
-	expected = tuple(SQL_obj.names_and_pins_default.values())
-	assert method == expected
+# def test_return_list(SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp()
+# 	assert type(data) == list
 
 
-def test_initials_tbl_in_db_method(SQL_obj):	
-	expected = 3
-	fetched_data = SQL_obj.fetch_all_data_from_temp()
-	assert expected == len(fetched_data)
-	## other TBL
+# def test_room_names_are_correct(SQL_obj):	
+# 	fetched_list_with_tuples = SQL_obj.fetch_all_data_from_temp()	
+# 	temps, humidity, _ =  [tup[1:] for tup in fetched_list_with_tuples]
+# 	list_with_temps_and_humidity = [{'temp':temp, 'humidity': hum} 
+# 									for temp, hum in zip(temps, humidity)]
+# 	ans = dict(zip(room_names, list_with_temps_and_humidity))
+# 	assert ans == SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
 
-def test_names_and_pins_output_data_is_dict(SQL_obj):
-	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
-	expected = dict
-	assert expected == type(from_method)
+# def test_fetch_all_data_from_temp_return_choosen_row(SQL_obj):
+# 	method = SQL_obj.fetch_all_data_from_temp(row=3)
+# 	expected = tuple(SQL_obj.names_and_pins_default.values())
+# 	assert method == expected
 
-def test_names_and_pins_correct_output_data(SQL_obj):
-	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
-	expected = SQL_obj.names_and_pins_default
-	assert expected == from_method
+
+# def test_initials_tbl_in_db_method(SQL_obj):	
+# 	expected = 3
+# 	fetched_data = SQL_obj.fetch_all_data_from_temp()
+# 	assert expected == len(fetched_data)
+# 	## other TBL
+
+# def test_names_and_pins_output_data_is_dict(SQL_obj):
+# 	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
+# 	expected = dict
+# 	assert expected == type(from_method)
+
+# def test_names_and_pins_correct_output_data(SQL_obj):
+# 	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
+# 	expected = SQL_obj.names_and_pins_default
+# 	assert expected == from_method
 
 
 ##CSV
-@pytest.mark.parametrize('time_examples',(
-	(['23-10-2019,08:00', '24-10-2019,10:00', '25-10-2019,14:00']),
-	(['30-10-2019,01:00', '31-10-2019,22:00', '31-10-2019,11:00']),
-	))	
-def test_saved_data_to_csv_main_file(csv_in_class, backend, time_examples):
-# create and save data to file 	
-	triggers = csv_in_class.TRIGGER_HOURS
-	for full_time in time_examples:
-		csv_in_class.save_temp_to_csv_handler(path=test_path, full_time=full_time)
-		f = backend.save_to_file()
-		_, expected = save_to_file.CSV_Class(
-				backend_file=f).read_csv(close_file=True)			
-	else:
-		f = backend.save_to_file()
-	_, rows = save_to_file.CSV_Class(
-		backend_file=f).read_csv(close_file=True)
-	assert expected == rows
+# @pytest.mark.parametrize('time_examples',(
+# 	(['23-10-2019,08:00', '24-10-2019,10:00', '25-10-2019,14:00']),
+# 	(['30-10-2019,01:00', '31-10-2019,22:00', '31-10-2019,11:00']),
+# 	))	
+# def test_saved_data_to_csv_main_file(csv_in_class, backend, time_examples):
+# # create and save data to file 	
+# 	triggers = csv_in_class.TRIGGER_HOURS
+# 	for full_time in time_examples:
+# 		csv_in_class.save_temp_to_csv_handler(path=test_path, full_time=full_time)
+# 		f = backend.save_to_file()
+# 		_, expected = save_to_file.CSV_Class(
+# 				backend_file=f).read_csv(close_file=True)			
+# 	else:
+# 		f = backend.save_to_file()
+# 	_, rows = save_to_file.CSV_Class(
+# 		backend_file=f).read_csv(close_file=True)
+# 	assert expected == rows
 
 
 def test_save_data_to_csv_main_file_correct_data_last_row(csv_in_class, pure_csv, backend):
@@ -664,30 +664,77 @@ def create_db_file():
 
 
 # create artificial data_base 
-@pytest.fixture(name='cursor_db', params=['without_table', 'with_table'])
-def create_data_base(request, backend_db_file):
-	# create connection and cursor to menage dataBase
+# @pytest.fixture(name='cursor_db', params=['without_table', 'with_table'])
+# def create_data_base(request, backend_db_file):
+# 	# create connection and cursor to menage dataBase
+# 	conn = sqlite3.connect(backend_db_file)
+# 	cursor = conn.cursor()	
+# 	if request.param == 'without_table':
+# 		yield cursor, True
+# 	else:
+# 		sql = '''CREATE TABLE IF NOT EXISTS sockets (
+# 				id integer PRIMARY KEY,
+# 				turn_on text,
+# 				turn_off text);
+# 		'''
+# 		cursor.execute(sql)
+# 		yield cursor, False
+# 	conn.close()
+
+
+# created cursor
+@pytest.fixture(name='cursor')
+def create_cursor(backend_db_file):
 	conn = sqlite3.connect(backend_db_file)
-	cursor = conn.cursor()	
-	if request.param == 'without_table':
-		yield cursor, True
-	else:
-		sql = '''CREATE TABLE IF NOT EXISTS sockets (
+	cursor = conn.cursor()
+	yield cursor
+	conn.close()	
+
+
+# cursor with maked socket table
+@pytest.fixture(name='soc_tab')
+def create_table(cursor):
+	sql = '''CREATE TABLE IF NOT EXISTS sockets (
 				id integer PRIMARY KEY,
 				turn_on text,
 				turn_off text);
 		'''
-		cursor.execute(sql)
-		yield cursor, False
-	conn.close()
+	cursor.execute(sql)
+	yield cursor
+
+#cursor with maked errors tokens table
+@pytest.fixture(name='tokens_table')
+def create_table(cursor):
+	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor.execute(sql)
+	yield cursor
+
+#cursor with maked temp & humidity table
+@pytest.fixture(name='temperature_table')
+def create_table(cursor):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor.execute(sql)
+	yield cursor
 
 
 # recognizon table exists
-def test_recognize_existance_table(cursor_db, SQL_obj):
-	cursor, expected = cursor_db
+def test_recognize_exists_table(cursor, SQL_obj):
 	table_name = 'sockets'	
 	from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
-	assert from_method == expected
+	assert from_method
+
 
 @pytest.mark.parametrize('input_data', (
 	([23, 'somthing']),
@@ -700,32 +747,58 @@ def test_recognize_existance_table_raise_err(input_data, SQL_obj):
 
 # fetch columns names
 
-def test_fetch_column_names(cursor_db, SQL_obj):
-	cursor, flag = cursor_db
-	table_name = 'sockets'
-	if not flag:
-		from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
-		expected = ['id','turn_on', 'turn_off']
-		assert from_method == expected
+def test_fetch_column_names(soc_tab, SQL_obj):
+	cursor = soc_tab
+	table_name = 'sockets'	
+	from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+	expected = ['id','turn_on', 'turn_off']
+	assert from_method == expected
 
 
 @pytest.mark.parametrize('input_data', (
-	(['somestring', ['abcd']]),
-	([sqlite3.Cursor, ['abcd']]),
-	([sqlite3.Cursor, 'some_table']),
+	(['somestring', ['abcd'], False]),
+	([sqlite3.Cursor, ['abcd'], False]),
+	([sqlite3.Cursor, 'some_table', False]),
+	(['somthing', 'some_table', True]),
+	(['somthing', 'sockets', True]),
+
 	))
-def test_fetch_column_names_raise_err(input_data, cursor_db, SQL_obj):
-	cursor, flag = cursor_db
-	second_cursor, table_name = input_data
+def test_fetch_column_names_raise_err(input_data, temperature_table, SQL_obj):
+	cursor, table_name, flag = input_data
 	with pytest.raises(Exception):
-		if not flag:
-			from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+		if flag:
+			SQL_obj.fetch_column_names(cursor=soc_tab, table_name=table_name)
 		else:
-			from_method = SQL_obj.fetch_column_names(cursor=second_cursor, table_name=table_name)
+			SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+
+		
 	
 
+# create table
+def test_create_table(cursor, SQL_obj):	
+	table_sheet = SQL_obj.table_errors_tokens_and_seted_temperature()
+	from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
+	assert from_method
 
-	
-	
+def test_table_sheets(cursor, SQL_obj):
+	tables = {SQL_obj.table_errors_tokens_and_seted_temperature: ['id', 'salon', 'maly_pokoj', 'kuchnia', 'WC', 'outside'],
+				SQL_obj.table_temperature: ['id', 'salon', 'maly_pokoj', 'kuchnia', 'WC', 'outside'],
+				SQL_obj.table_sockets: ['id','turn_on', 'turn_off'],
+				}
+	for key, expected in tables.items():
+		table_sheet = key()
+		# import wdb; wdb.set_trace()	
+		from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
+		assert SQL_obj.fetch_column_names(cursor=cursor, table_name=table_sheet[0]) == expected
+
+# insert data to table
+
+
+def test_insert_data_to_temperature(cursor, SQL_obj):
+	tuple_int = tuple(range(1,6))
+	# last row id 
+	expected = 1
+	from_method = SQL_obj.insert_data_to_temperature(cursor=cursor, tuple_int=tuple_int)
+	assert from_method == expected
 	
 
