@@ -248,17 +248,20 @@ class HandlerSQL(HandlerFile):
 
 ### INSERT
 
-	def insert_data_to_temperature(self, cursor, tuple_int:tuple):
+	def insert_data_to_temperature(self, conn, tuple_int:tuple):
 		'''tuple: tuple with 5 int's temperature value '''
+		if type(tuple_int) != tuple:
+			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = ValueError) 
 		sql = '''INSERT INTO 'temperature_humidity' (
 				salon,
 				maly_pokoj,
 				kuchnia,
 				WC,
 				outside)
-				VALUES (?,?,?,?,?)'''		
+				VALUES (?,?,?,?,?)'''
+		cursor = conn.cursor()		
 		cursor.execute(sql, tuple_int)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {tuple_int}')
 		last_row = cursor.lastrowid
 		return last_row

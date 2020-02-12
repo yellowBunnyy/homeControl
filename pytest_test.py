@@ -3,6 +3,7 @@ room_names = save_to_file.HandlerFile().room_names
 import pytest, flask_home, os, Adafruit_DHT, flask, json, random, sqlite3
 from unittest.mock import patch
 from unittest.mock import Mock
+from logic_script.save_to_file import MyExceptions
 
 
 test_path = os.path.join(os.getcwd(),'logic_script','test_csv.csv')
@@ -80,7 +81,7 @@ def create_test_file():
 	with open(path, 'w') as f:
 		f.write(json.dumps(content))
 	yield path, content 
-	os.remove(path)
+	# os.remove(path)
 
 
 	
@@ -681,6 +682,12 @@ def create_db_file():
 # 		yield cursor, False
 # 	conn.close()
 
+# create connection
+@pytest.fixture(name='conn')
+def create_connection(backend_db_file):
+	conn = sqlite3.connect(backend_db_file)
+	yield conn
+	conn.close()
 
 # created cursor
 @pytest.fixture(name='cursor')
@@ -692,8 +699,8 @@ def create_cursor(backend_db_file):
 
 
 # cursor with maked socket table
-@pytest.fixture(name='soc_tab')
-def create_table(cursor):
+@pytest.fixture(name='table_sockets')
+def create_table_socket(cursor):
 	sql = '''CREATE TABLE IF NOT EXISTS sockets (
 				id integer PRIMARY KEY,
 				turn_on text,
@@ -703,8 +710,8 @@ def create_table(cursor):
 	yield cursor
 
 #cursor with maked errors tokens table
-@pytest.fixture(name='tokens_table')
-def create_table(cursor):
+@pytest.fixture(name='table_tokens')
+def create_table_token(cursor):
 	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
 				id integer PRIMARY KEY,
 				salon integer,
@@ -716,8 +723,8 @@ def create_table(cursor):
 	yield cursor
 
 #cursor with maked temp & humidity table
-@pytest.fixture(name='temperature_table')
-def create_table(cursor):
+@pytest.fixture(name='table_temperature')
+def create_table_temperature(conn):
 	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
 				id integer PRIMARY KEY,
 				salon integer,
@@ -725,8 +732,9 @@ def create_table(cursor):
 				kuchnia integer,
 				WC integer,
 				outside integer);'''
-	cursor.execute(sql)
-	yield cursor
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield conn
 
 
 # recognizon table exists
@@ -747,11 +755,11 @@ def test_recognize_existance_table_raise_err(input_data, SQL_obj):
 
 # fetch columns names
 
-def test_fetch_column_names(soc_tab, SQL_obj):
-	cursor = soc_tab
-	table_name = 'sockets'	
+def test_fetch_column_names(table_temperature, SQL_obj):
+	cursor = table_temperature
+	table_name = 'temperature_humidity'
 	from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
-	expected = ['id','turn_on', 'turn_off']
+	expected = ['id','salon', 'maly_pokoj', 'kuchnia','WC', 'outside']
 	assert from_method == expected
 
 
@@ -760,18 +768,15 @@ def test_fetch_column_names(soc_tab, SQL_obj):
 	([sqlite3.Cursor, ['abcd'], False]),
 	([sqlite3.Cursor, 'some_table', False]),
 	(['somthing', 'some_table', True]),
-	(['somthing', 'sockets', True]),
-
+	(['somthing', '', True]),
 	))
-def test_fetch_column_names_raise_err(input_data, temperature_table, SQL_obj):
+def test_fetch_column_names_raise_err(input_data, table_sockets, SQL_obj):
 	cursor, table_name, flag = input_data
 	with pytest.raises(Exception):
 		if flag:
-			SQL_obj.fetch_column_names(cursor=soc_tab, table_name=table_name)
+			SQL_obj.fetch_column_names(cursor=table_sockets, table_name=table_name)
 		else:
-			SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
-
-		
+			SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)	
 	
 
 # create table
@@ -786,19 +791,28 @@ def test_table_sheets(cursor, SQL_obj):
 				SQL_obj.table_sockets: ['id','turn_on', 'turn_off'],
 				}
 	for key, expected in tables.items():
-		table_sheet = key()
-		# import wdb; wdb.set_trace()	
+		table_sheet = key()			
 		from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
 		assert SQL_obj.fetch_column_names(cursor=cursor, table_name=table_sheet[0]) == expected
 
 # insert data to table
 
 
-def test_insert_data_to_temperature(cursor, SQL_obj):
+def test_insert_data_to_temperature(table_temperature, SQL_obj):	
 	tuple_int = tuple(range(1,6))
 	# last row id 
 	expected = 1
-	from_method = SQL_obj.insert_data_to_temperature(cursor=cursor, tuple_int=tuple_int)
+	from_method = SQL_obj.insert_data_to_temperature(conn=table_temperature, tuple_int=tuple_int)
 	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(list(range(1,6))),
+	(tuple(range(1,10))),
+	))
+def test_insert_data_to_temperature_raise_err(input_data, table_temperature, SQL_obj):
+	with pytest.raises(Exception):
+		from_method = SQL_obj.insert_data_to_temperature(conn=table_temperature, tuple_int=input_data)
+	
 	
 
