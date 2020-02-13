@@ -190,6 +190,7 @@ class HandlerSQL(HandlerFile):
 			otherwise return true'''
 		# script search table which is input --> (table_name) arg this metchod
 		cursor.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
+		# import wdb; wdb.set_trace()
 		if cursor.fetchone():
 			print('db exist --> flag :false')
 			return False
@@ -251,7 +252,7 @@ class HandlerSQL(HandlerFile):
 	def insert_data_to_temperature(self, conn, tuple_int:tuple):
 		'''tuple: tuple with 5 int's temperature value '''
 		if type(tuple_int) != tuple:
-			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = ValueError) 
+			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = TypeError) 
 		sql = '''INSERT INTO 'temperature_humidity' (
 				salon,
 				maly_pokoj,
@@ -266,14 +267,17 @@ class HandlerSQL(HandlerFile):
 		last_row = cursor.lastrowid
 		return last_row
 
-	def insert_data_to_sockets_table(self, times:tuple) -> int:
+	def insert_data_to_sockets_table(self, conn, times:tuple) -> int:
 		'''return last row in int'''
+		if type(times) != tuple:
+			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = TypeError)
+			
 		sql = '''INSERT INTO sockets (
 				turn_on, turn_off)
 				VALUES(?,?)'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, times)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {times}')
 		last_row = cursor.lastrowid
 		return last_row

@@ -81,7 +81,7 @@ def create_test_file():
 	with open(path, 'w') as f:
 		f.write(json.dumps(content))
 	yield path, content 
-	# os.remove(path)
+	os.remove(path)
 
 
 	
@@ -700,14 +700,15 @@ def create_cursor(backend_db_file):
 
 # cursor with maked socket table
 @pytest.fixture(name='table_sockets')
-def create_table_socket(cursor):
+def create_table_socket(conn):
 	sql = '''CREATE TABLE IF NOT EXISTS sockets (
 				id integer PRIMARY KEY,
 				turn_on text,
 				turn_off text);
 		'''
+	cursor = conn.cursor()
 	cursor.execute(sql)
-	yield cursor
+	yield conn
 
 #cursor with maked errors tokens table
 @pytest.fixture(name='table_tokens')
@@ -736,12 +737,33 @@ def create_table_temperature(conn):
 	cursor.execute(sql)	
 	yield conn
 
+@pytest.fixture(name='table_temperature_cursor')
+def create_table_temperature_cursor(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield cursor
 
 # recognizon table exists
-def test_recognize_exists_table(cursor, SQL_obj):
-	table_name = 'sockets'	
-	from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
-	assert from_method
+@pytest.mark.parametrize('input_data', (
+	(True),
+	(False),
+	))
+def test_recognize_exists_table(input_data, cursor, table_temperature_cursor, SQL_obj):	
+	if input_data:
+		table_name = 'sockets'
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
+		assert from_method == True
+	else:
+		table_name = 'temperature_humidity'
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=table_temperature_cursor, table_name=table_name)
+		assert from_method == False
 
 
 @pytest.mark.parametrize('input_data', (
@@ -795,9 +817,9 @@ def test_table_sheets(cursor, SQL_obj):
 		from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
 		assert SQL_obj.fetch_column_names(cursor=cursor, table_name=table_sheet[0]) == expected
 
-# insert data to table
 
-
+### insert data to table
+# insert temp value to table
 def test_insert_data_to_temperature(table_temperature, SQL_obj):	
 	tuple_int = tuple(range(1,6))
 	# last row id 
@@ -813,6 +835,30 @@ def test_insert_data_to_temperature(table_temperature, SQL_obj):
 def test_insert_data_to_temperature_raise_err(input_data, table_temperature, SQL_obj):
 	with pytest.raises(Exception):
 		from_method = SQL_obj.insert_data_to_temperature(conn=table_temperature, tuple_int=input_data)
-	
-	
 
+# insert sockets value to table
+
+@pytest.mark.parametrize('input_data, expected', (
+	(('00:29','12:00'),1),
+	(('23:29','12:00'),1),
+	))
+def test_insert_data_to_sockets_table(input_data, expected, table_sockets, SQL_obj):
+	from_method = SQL_obj.insert_data_to_sockets_table(conn=table_sockets, times=input_data)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(['not_conn_obj', ('23:29','12:00'), False]),
+	(['will_be_changed_to_obj', ['23:29','12:00'], True]),
+	(['will_be_changed_to_obj', ('23:29','12:00'), True]),
+	))
+def test_insert_data_to_sockets_table_raise_err(input_data, table_sockets, SQL_obj):
+	conn, times, flag = input_data
+	with pytest.raises(Exception):
+		if flag:
+			conn = table_sockets
+			from_method = SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+		else:
+			from_method = SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+
+	
