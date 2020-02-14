@@ -712,7 +712,7 @@ def create_table_socket(conn):
 
 #cursor with maked errors tokens table
 @pytest.fixture(name='table_tokens')
-def create_table_token(cursor):
+def create_table_token(conn):
 	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
 				id integer PRIMARY KEY,
 				salon integer,
@@ -720,8 +720,9 @@ def create_table_token(cursor):
 				kuchnia integer,
 				WC integer,
 				outside integer);'''
+	cursor = conn.cursor()
 	cursor.execute(sql)
-	yield cursor
+	yield conn
 
 #cursor with maked temp & humidity table
 @pytest.fixture(name='table_temperature')
@@ -850,7 +851,13 @@ def test_insert_data_to_sockets_table(input_data, expected, table_sockets, SQL_o
 @pytest.mark.parametrize('input_data', (
 	(['not_conn_obj', ('23:29','12:00'), False]),
 	(['will_be_changed_to_obj', ['23:29','12:00'], True]),
-	(['will_be_changed_to_obj', ('23:29','12:00'), True]),
+	(['will_be_changed_to_obj', ('23:290','12:00'), True]),
+	(['will_be_changed_to_obj', ('23:290','da12:00'), True]),
+	(['will_be_changed_to_obj', ('23:291d','112:00'), True]),
+	(['will_be_changed_to_obj', ('!@#23:290','2:00'), True]),
+	(['will_be_changed_to_obj', ('3:290','12:00'), True]),
+	(['will_be_changed_to_obj', ('93:29','12:00'), True]),
+	(['will_be_changed_to_obj', ('12:29','12:60'), True]),
 	))
 def test_insert_data_to_sockets_table_raise_err(input_data, table_sockets, SQL_obj):
 	conn, times, flag = input_data
@@ -861,4 +868,27 @@ def test_insert_data_to_sockets_table_raise_err(input_data, table_sockets, SQL_o
 		else:
 			from_method = SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
 
-	
+# insert token to table
+@pytest.mark.parametrize('input_data, expected', (
+	([(23,20,21,19, 12), True], 1),
+	([(10,20,30,40,50), False], 1)	
+
+	))
+def test_insert_token_to_table(input_data, table_tokens, expected, SQL_obj):
+	tokens_int, seted_temperature = input_data
+	if seted_temperature:
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)
+		assert from_method == expected
+	else:
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=False)
+		assert from_method == expected
+
+# @pytest.mark.parametrize('input_data', (
+# 	([(1,2,3,4), False]),
+# 	([[1,2,3,4], False]),
+# 	([[1,2,3,4,5], False]),
+# 	))
+# def test_insert_token_to_table_raise_err(input_data, table_tokens, SQL_obj):
+# 	tokens_int, seted_temperature = input_data
+# 	with pytest.raises(Exception):
+# 		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)

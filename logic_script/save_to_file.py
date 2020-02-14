@@ -271,7 +271,11 @@ class HandlerSQL(HandlerFile):
 		'''return last row in int'''
 		if type(times) != tuple:
 			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = TypeError)
-			
+		patt = r'[0-5][0-9]:[0-5][0-9]'
+		valid_time_string = lambda patt, s_time: False if re.match(patt, s_time) and len(s_time) == 5 else True
+		for s_time in times:
+			if valid_time_string(patt, s_time):
+				raise MyExceptions(message=f'{s_time} is not "00:00" format time!!', error = ValueError)
 		sql = '''INSERT INTO sockets (
 				turn_on, turn_off)
 				VALUES(?,?)'''
@@ -282,9 +286,14 @@ class HandlerSQL(HandlerFile):
 		last_row = cursor.lastrowid
 		return last_row
 
-	def insert_data_token_table(self, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
+	def insert_data_token_table(self, conn, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
 		'''Insert to table in data base tuple with tokens_int or tuple with value ints
 		seted temperature return last row in int'''
+		allow_obj = lambda obj: isinstance(obj, (bool, tuple))
+		if allow_obj(tokens_int) and allow_obj(seted_temperature):
+			pass
+		else:
+			raise MyExceptions(message=f'one of args are not tuple or NoneType', error = ValueError)
 		sql = '''INSERT INTO errors_tokens_and_seted_temperature (
 				salon,
 				maly_pokoj,
@@ -292,9 +301,9 @@ class HandlerSQL(HandlerFile):
 				WC,
 				outside)
 				VALUES (?,?,?,?,?)'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, tokens_int if tokens_int else seted_temperature)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {tokens_int if tokens_int else seted_temperature}')
 		last_row = cursor.lastrowid
 		return last_row
