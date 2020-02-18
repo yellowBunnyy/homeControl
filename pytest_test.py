@@ -883,12 +883,75 @@ def test_insert_token_to_table(input_data, table_tokens, expected, SQL_obj):
 		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=False)
 		assert from_method == expected
 
+@pytest.mark.parametrize('input_data', (
+	([(1,2,3,4), False]),
+	([[1,2,3,4], False]),
+	([[1,2,3,4,5], False]),
+	([123, False]),
+	(False, False),
+	(True, False),
+	(False, False),
+	([True, (10,20,30,40,50)]),	
+	))
+def test_insert_token_to_table_raise_err(input_data, table_tokens, SQL_obj):
+	tokens_int, seted_temperature = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)
+
+## update
+
+# update data in temperature
 # @pytest.mark.parametrize('input_data', (
-# 	([(1,2,3,4), False]),
-# 	([[1,2,3,4], False]),
-# 	([[1,2,3,4,5], False]),
+# 	([(10,20,30,40,50), True]),
 # 	))
-# def test_insert_token_to_table_raise_err(input_data, table_tokens, SQL_obj):
-# 	tokens_int, seted_temperature = input_data
-# 	with pytest.raises(Exception):
-# 		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)
+# def test_update_data_in_temp(input_data, SQL_obj):
+# 	temp_or_humidity, temperature= input_data
+# 	from_method = SQL_obj.update_data_in_temperature(temp_or_humidity=temp_or_humidity, temperature=temperature)
+# 	pass
+
+
+## fetch data
+
+# fetch all data from temp
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	((20,21,22,23,24), [False, False, False], [(1, 20, 21, 22, 23, 24)]),
+	))
+def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
+	table_temperature_conn = table_temperature
+	SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=data_to_table)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[False, False, False], # return pure fetchall()
+		[(1, 20, 21, 22, 23, 24),(2,11,22,33,44,55), (3,1,2,3,4,5)]),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[1, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	))
+def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+def test_fetch_all_data_from_temp_multiple_rows_raise_err():
+	#check row == 0
+	pass
+
+
+	

@@ -289,11 +289,10 @@ class HandlerSQL(HandlerFile):
 	def insert_data_token_table(self, conn, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
 		'''Insert to table in data base tuple with tokens_int or tuple with value ints
 		seted temperature return last row in int'''
-		allow_obj = lambda obj: isinstance(obj, (bool, tuple))
-		if allow_obj(tokens_int) and allow_obj(seted_temperature):
+		if isinstance(tokens_int, (bool, tuple)) and isinstance(seted_temperature, (bool, tuple)):
 			pass
 		else:
-			raise MyExceptions(message=f'one of args are not tuple or NoneType', error = ValueError)
+			raise MyExceptions(message=f'one of args are not tuple or bool obj', error = ValueError)
 		sql = '''INSERT INTO errors_tokens_and_seted_temperature (
 				salon,
 				maly_pokoj,
@@ -327,6 +326,7 @@ class HandlerSQL(HandlerFile):
 		cursor.execute(sql, data)
 		print(f'{"temp" if temperature else "humidity"} was updated {temp_or_humidity}')		
 		self.conn.commit()
+		return 
 
 	def update_data_in_sockets_table(self, times:tuple, row:int):
 		'''This method updates data in sockets table
@@ -368,13 +368,14 @@ class HandlerSQL(HandlerFile):
 
 ## FETCH DATA
 	
-	def fetch_all_data_from_temp(self, row:int=False, temperature_dict:bool=False, pin_dict:bool=False) -> (dict, list):
+	def fetch_all_data_from_temp(self, conn, row:int=False, temperature_dict:bool=False, pin_dict:bool=False) -> (dict, list):
 		'''
 		1 - temps,
 		2 - humidity
+		row must be > 0
 				'''
 		sql = '''SELECT * from temperature_humidity'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()
 
