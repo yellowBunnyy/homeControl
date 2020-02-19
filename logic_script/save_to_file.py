@@ -374,11 +374,12 @@ class HandlerSQL(HandlerFile):
 		2 - humidity
 		row must be > 0
 				'''
+		if type(row) == int and row <= 0:
+			raise MyExceptions(message=f'{row} <=0. Must be grater than 0', error=ValueError)
 		sql = '''SELECT * from temperature_humidity'''
 		cursor = conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()
-
 		if temperature_dict:
 			# return dict obj where keys are room names and value 
 			#	are dict obj with temp and humidity value			
@@ -390,9 +391,11 @@ class HandlerSQL(HandlerFile):
 			dict_obj = dict(zip(self.room_names, fetched_data[2][1:]))
 			return dict_obj							
 		if row:
-			# data in tuple without row			
+			# data in tuple without row
+			row = 1 if type(row) == bool else row			
 			return fetched_data[row - 1][1:]
 		return fetched_data
+
 
 	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.

@@ -928,7 +928,6 @@ def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, S
 	assert from_method == expected
 
 
-
 @pytest.mark.parametrize('data_to_table, input_data, expected', (
 	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
 		[False, False, False], # return pure fetchall()
@@ -936,6 +935,22 @@ def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, S
 	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
 		[1, False, False], # return wanted row > 0
 		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[True, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[2, False, False], # return wanted. row > 0
+		(11,22,33,44,55)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[3, False, False], # return wanted. row > 0
+		(1,2,3,4,5)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, True, False], # return dict with data e.g. look down 
+		{'salon': {'temp':20, 'humidity':11}, 'maly_pokoj': {'temp':21, 'humidity':22},
+		'kuchnia': {'temp':22, 'humidity':33}, 'WC': {'temp':23, 'humidity':44}, 'outside':{'temp':24, 'humidity':55}}),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, False, True], # return wanted row > 0
+		{'salon':1, 'maly_pokoj':2, 'kuchnia':3, 'WC':4, 'outside':5}),
 	))
 def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
 	table_temperature_conn = table_temperature
@@ -949,9 +964,27 @@ def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expec
 	assert from_method == expected
 
 
-def test_fetch_all_data_from_temp_multiple_rows_raise_err():
+@pytest.mark.parametrize('data_to_table, input_data', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[10, False, False]), # row out of range	
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[0, False, False]),
+	# ([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+	# 	[True, False, False]),
+	))
+def test_fetch_all_data_from_temp_multiple_rows_raise_err(data_to_table, input_data, SQL_obj, table_temperature, conn):
 	#check row == 0
-	pass
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	# import wdb; wdb.set_trace()
+	with pytest.raises(Exception):
+		from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	
 
 
 	
