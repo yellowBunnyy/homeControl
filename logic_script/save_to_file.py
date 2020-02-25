@@ -270,7 +270,7 @@ class HandlerSQL(HandlerFile):
 	def insert_data_to_sockets_table(self, conn, times:tuple) -> int:
 		'''return last row in int'''
 		if type(times) != tuple:
-			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = TypeError)
+			raise MyExceptions(message=f'{times} is not tuple!!', error = TypeError)
 		patt = r'[0-5][0-9]:[0-5][0-9]'
 		valid_time_string = lambda patt, s_time: False if re.match(patt, s_time) and len(s_time) == 5 else True
 		for s_time in times:
@@ -379,6 +379,7 @@ class HandlerSQL(HandlerFile):
 		sql = '''SELECT * from temperature_humidity'''
 		cursor = conn.cursor()
 		cursor.execute(sql)
+		# import wdb; wdb.set_trace()
 		fetched_data = cursor.fetchall()
 		if temperature_dict:
 			# return dict obj where keys are room names and value 
@@ -397,13 +398,13 @@ class HandlerSQL(HandlerFile):
 		return fetched_data
 
 
-	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
+	def fetch_all_data_from_sockets(self, conn, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.
 		row: row number.
 		turn_on: return hour in str format if true
 		turn_off: return hour in str format if true'''
 		sql = '''SELECT * from sockets'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()		
 		if row and turn_on:

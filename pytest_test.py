@@ -91,7 +91,181 @@ def create_test_file():
 def no_request(monkeypath):
 	monkeypath.delattr('flask.request.method')
 	
+##### HandlerSQL class
 
+
+# create backend db file
+@pytest.fixture(name='backend_db_file')
+def create_db_file():
+	db_path = r'/home/pi/Desktop/env/fl/src/test_db.db'
+	with open(db_path, 'w') as f:
+		f.write('')
+		yield db_path
+	os.remove(db_path)
+
+
+# create connection
+@pytest.fixture(name='conn')
+def create_connection(backend_db_file):
+	conn = sqlite3.connect(backend_db_file)
+	yield conn
+	conn.close()
+
+# created cursor
+@pytest.fixture(name='cursor')
+def create_cursor(backend_db_file):
+	conn = sqlite3.connect(backend_db_file)
+	cursor = conn.cursor()
+	yield cursor
+	conn.close()	
+
+
+# cursor with maked socket table
+@pytest.fixture(name='table_sockets')
+def create_table_socket(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS sockets (
+				id integer PRIMARY KEY,
+				turn_on text,
+				turn_off text);
+		'''
+	cursor = conn.cursor()
+	cursor.execute(sql)
+	yield conn
+
+#cursor with maked errors tokens table
+@pytest.fixture(name='table_tokens')
+def create_table_token(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)
+	yield conn
+
+#cursor with maked temp & humidity table
+@pytest.fixture(name='table_temperature')
+def create_table_temperature(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield conn
+
+@pytest.fixture(name='table_temperature_cursor')
+def create_table_temperature_cursor(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield cursor
+
+## fetch data
+
+# fetch all data from temp
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	((20,21,22,23,24), [False, False, False], [(1, 20, 21, 22, 23, 24)]),
+	))
+def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, SQL_obj, table_temperature):
+	table_temperature_conn = table_temperature
+	SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=data_to_table)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=table_temperature_conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[False, False, False], # return pure fetchall()
+		[(1, 20, 21, 22, 23, 24),(2,11,22,33,44,55), (3,1,2,3,4,5)]),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[1, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[True, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[2, False, False], # return wanted. row > 0
+		(11,22,33,44,55)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[3, False, False], # return wanted. row > 0
+		(1,2,3,4,5)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, True, False], # return dict with data e.g. look down 
+		{'salon': {'temp':20, 'humidity':11}, 'maly_pokoj': {'temp':21, 'humidity':22},
+		'kuchnia': {'temp':22, 'humidity':33}, 'WC': {'temp':23, 'humidity':44}, 'outside':{'temp':24, 'humidity':55}}),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, False, True], # return wanted row > 0
+		{'salon':1, 'maly_pokoj':2, 'kuchnia':3, 'WC':4, 'outside':5}),
+	))
+def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('data_to_table, input_data', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[10, False, False]), # row out of range	
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[0, False, False]),
+	# ([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+	# 	[True, False, False]),
+	))
+def test_fetch_all_data_from_temp_multiple_rows_raise_err(data_to_table, input_data, SQL_obj, table_temperature, conn):
+	#check row == 0
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	# import wdb; wdb.set_trace()
+	with pytest.raises(Exception):
+		from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+
+# fetch all data from socket
+@pytest.mark.parametrize('input_data, data_to_table, expected', (
+	([1, True, False], [('00:12','10:20'), ('09:48', '23:59')], '00:12'), # return turn_on time
+	([1, False, True], [('00:12','10:20'), ('09:48', '23:59')], '10:20'), # return turn_off time
+	([1, False, False], [('00:12','10:20'), ('09:48', '23:59')], ('00:12','10:20')), # return row as tuple
+	([False, False, False], [('00:12','10:20'), ('09:48', '23:59')], [('00:12','10:20'), ('09:48', '23:59')]),
+	))
+def test_fetch_all_data_from_sockets(input_data, data_to_table, expected, SQL_obj, table_sockets):
+	row, turn_on, turn_off = input_data
+	conn = table_sockets
+	for tup_row in data_to_table:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=tup_row)
+	from_method = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row, turn_on=turn_on, turn_off=turn_off)
+	assert from_method == expected
+
+
+def test_fetch_all_data_from_sockets_raise_err():
+	pass
 
 ## SQL
 	## tbl temperature_humidity
@@ -434,7 +608,7 @@ def test_all_sensors_in_row(SQL_obj, simpleyTestingCls):
 
 ##### FLASK HOME (Main file)
 
-# temperature backgound
+#temperature backgound
 @pytest.mark.parametrize('input_data', (
 	({'salon':{'temp':34,'humidity':60}, 
 		'WC': {'temp':24,'humidity':29},
@@ -651,105 +825,7 @@ def test_search_key_raise_err(input_data, handler_file_obj):
 		from_method = handler_file_obj.recur_search_key(d=d_content, s_key=key)
 	
 
-##### HandlerSQL class
 
-
-# create backend db file
-@pytest.fixture(name='backend_db_file')
-def create_db_file():
-	db_path = r'/home/pi/Desktop/env/fl/src/test_db.db'
-	with open(db_path, 'w') as f:
-		f.write('')
-		yield db_path
-	os.remove(db_path)
-
-
-# create artificial data_base 
-# @pytest.fixture(name='cursor_db', params=['without_table', 'with_table'])
-# def create_data_base(request, backend_db_file):
-# 	# create connection and cursor to menage dataBase
-# 	conn = sqlite3.connect(backend_db_file)
-# 	cursor = conn.cursor()	
-# 	if request.param == 'without_table':
-# 		yield cursor, True
-# 	else:
-# 		sql = '''CREATE TABLE IF NOT EXISTS sockets (
-# 				id integer PRIMARY KEY,
-# 				turn_on text,
-# 				turn_off text);
-# 		'''
-# 		cursor.execute(sql)
-# 		yield cursor, False
-# 	conn.close()
-
-# create connection
-@pytest.fixture(name='conn')
-def create_connection(backend_db_file):
-	conn = sqlite3.connect(backend_db_file)
-	yield conn
-	conn.close()
-
-# created cursor
-@pytest.fixture(name='cursor')
-def create_cursor(backend_db_file):
-	conn = sqlite3.connect(backend_db_file)
-	cursor = conn.cursor()
-	yield cursor
-	conn.close()	
-
-
-# cursor with maked socket table
-@pytest.fixture(name='table_sockets')
-def create_table_socket(conn):
-	sql = '''CREATE TABLE IF NOT EXISTS sockets (
-				id integer PRIMARY KEY,
-				turn_on text,
-				turn_off text);
-		'''
-	cursor = conn.cursor()
-	cursor.execute(sql)
-	yield conn
-
-#cursor with maked errors tokens table
-@pytest.fixture(name='table_tokens')
-def create_table_token(conn):
-	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
-				id integer PRIMARY KEY,
-				salon integer,
-				maly_pokoj integer,
-				kuchnia integer,
-				WC integer,
-				outside integer);'''
-	cursor = conn.cursor()
-	cursor.execute(sql)
-	yield conn
-
-#cursor with maked temp & humidity table
-@pytest.fixture(name='table_temperature')
-def create_table_temperature(conn):
-	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
-				id integer PRIMARY KEY,
-				salon integer,
-				maly_pokoj integer,
-				kuchnia integer,
-				WC integer,
-				outside integer);'''
-	cursor = conn.cursor()
-	cursor.execute(sql)	
-	yield conn
-
-@pytest.fixture(name='table_temperature_cursor')
-def create_table_temperature_cursor(conn):
-	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
-				id integer PRIMARY KEY,
-				salon integer,
-				maly_pokoj integer,
-				kuchnia integer,
-				WC integer,
-				outside integer);'''
-	cursor = conn.cursor()
-	cursor.execute(sql)	
-	yield cursor
 
 # recognizon table exists
 @pytest.mark.parametrize('input_data', (
@@ -910,80 +986,7 @@ def test_insert_token_to_table_raise_err(input_data, table_tokens, SQL_obj):
 # 	pass
 
 
-## fetch data
 
-# fetch all data from temp
-
-@pytest.mark.parametrize('data_to_table, input_data, expected', (
-	((20,21,22,23,24), [False, False, False], [(1, 20, 21, 22, 23, 24)]),
-	))
-def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
-	table_temperature_conn = table_temperature
-	SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=data_to_table)
-	row, temperature_dict, pin_dict = input_data
-	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
-												row=row, 
-												temperature_dict=temperature_dict,
-												pin_dict=pin_dict)
-	assert from_method == expected
-
-
-@pytest.mark.parametrize('data_to_table, input_data, expected', (
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
-		[False, False, False], # return pure fetchall()
-		[(1, 20, 21, 22, 23, 24),(2,11,22,33,44,55), (3,1,2,3,4,5)]),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[1, False, False], # return wanted row > 0
-		(20,21,22,23,24)),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[True, False, False], # return wanted row > 0
-		(20,21,22,23,24)),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[2, False, False], # return wanted. row > 0
-		(11,22,33,44,55)),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[3, False, False], # return wanted. row > 0
-		(1,2,3,4,5)),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[False, True, False], # return dict with data e.g. look down 
-		{'salon': {'temp':20, 'humidity':11}, 'maly_pokoj': {'temp':21, 'humidity':22},
-		'kuchnia': {'temp':22, 'humidity':33}, 'WC': {'temp':23, 'humidity':44}, 'outside':{'temp':24, 'humidity':55}}),
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
-		[False, False, True], # return wanted row > 0
-		{'salon':1, 'maly_pokoj':2, 'kuchnia':3, 'WC':4, 'outside':5}),
-	))
-def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
-	table_temperature_conn = table_temperature
-	for row_with_data in data_to_table:
-		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
-	row, temperature_dict, pin_dict = input_data
-	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
-												row=row, 
-												temperature_dict=temperature_dict,
-												pin_dict=pin_dict)
-	assert from_method == expected
-
-
-@pytest.mark.parametrize('data_to_table, input_data', (
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
-		[10, False, False]), # row out of range	
-	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
-		[0, False, False]),
-	# ([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
-	# 	[True, False, False]),
-	))
-def test_fetch_all_data_from_temp_multiple_rows_raise_err(data_to_table, input_data, SQL_obj, table_temperature, conn):
-	#check row == 0
-	table_temperature_conn = table_temperature
-	for row_with_data in data_to_table:
-		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
-	row, temperature_dict, pin_dict = input_data
-	# import wdb; wdb.set_trace()
-	with pytest.raises(Exception):
-		from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
-												row=row, 
-												temperature_dict=temperature_dict,
-												pin_dict=pin_dict)
 	
 
 
