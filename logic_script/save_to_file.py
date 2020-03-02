@@ -272,9 +272,9 @@ class HandlerSQL(HandlerFile):
 		if type(times) != tuple:
 			raise MyExceptions(message=f'{times} is not tuple!!', error = TypeError)
 		patt = r'[0-5][0-9]:[0-5][0-9]'
-		valid_time_string = lambda patt, s_time: False if re.match(patt, s_time) and len(s_time) == 5 else True
+		is_valid_time_string = lambda patt, s_time: False if re.match(patt, s_time) and len(s_time) == 5 else True
 		for s_time in times:
-			if valid_time_string(patt, s_time):
+			if is_valid_time_string(patt, s_time):
 				raise MyExceptions(message=f'{s_time} is not "00:00" format time!!', error = ValueError)
 		sql = '''INSERT INTO sockets (
 				turn_on, turn_off)
@@ -288,7 +288,7 @@ class HandlerSQL(HandlerFile):
 
 	def insert_data_token_table(self, conn, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
 		'''Insert to table in data base tuple with tokens_int or tuple with value ints
-		seted temperature return last row in int'''
+		seted temperature for heaters return last row in int'''
 		if isinstance(tokens_int, (bool, tuple)) and isinstance(seted_temperature, (bool, tuple)):
 			pass
 		else:
@@ -403,6 +403,8 @@ class HandlerSQL(HandlerFile):
 		row: row number.
 		turn_on: return hour in str format if true
 		turn_off: return hour in str format if true'''
+		if row <= 0 or type(turn_on) != bool or type(turn_off) != bool:
+			raise MyExceptions(message=f'{row} <=0. Must be grater than 0' if row <= 0 else f'{turn_on} != bool' if type(turn_on) != bool else f'{turn_off} != bool', error=ValueError)
 		sql = '''SELECT * from sockets'''
 		cursor = conn.cursor()
 		cursor.execute(sql)
@@ -418,10 +420,10 @@ class HandlerSQL(HandlerFile):
 			return [tup[1:] for tup in fetched_data]
 
 
-	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
+	def fetch_data_from_tokens(self, conn, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
 		'''Fetch all data from error_tokens_and... table'''
 		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
 		all_data = cursor.fetchall()
 		# print(all_data)

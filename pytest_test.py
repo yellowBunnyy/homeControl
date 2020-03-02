@@ -253,7 +253,6 @@ def test_fetch_all_data_from_temp_multiple_rows_raise_err(data_to_table, input_d
 	([1, True, False], [('00:12','10:20'), ('09:48', '23:59')], '00:12'), # return turn_on time
 	([1, False, True], [('00:12','10:20'), ('09:48', '23:59')], '10:20'), # return turn_off time
 	([1, False, False], [('00:12','10:20'), ('09:48', '23:59')], ('00:12','10:20')), # return row as tuple
-	([False, False, False], [('00:12','10:20'), ('09:48', '23:59')], [('00:12','10:20'), ('09:48', '23:59')]),
 	))
 def test_fetch_all_data_from_sockets(input_data, data_to_table, expected, SQL_obj, table_sockets):
 	row, turn_on, turn_off = input_data
@@ -264,8 +263,46 @@ def test_fetch_all_data_from_sockets(input_data, data_to_table, expected, SQL_ob
 	assert from_method == expected
 
 
-def test_fetch_all_data_from_sockets_raise_err():
-	pass
+@pytest.mark.parametrize('input_data, data_to_tbl',(
+	([0, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([20, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([1, 'False', False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([1, True, 'True'], [('00:12','10:20'), ('09:48', '23:59')]),
+	(['1', True, 'True'], [('00:12','10:20'), ('09:48', '23:59')]),
+	([False, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	))
+def test_fetch_all_data_from_sockets_raise_err(input_data, data_to_tbl, table_sockets, SQL_obj):
+	conn = table_sockets
+	row, turn_on, turn_off = input_data
+	for tup_row in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=tup_row)
+	with pytest.raises(Exception):
+		from_method = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row, turn_on=turn_on, turn_off=turn_off)
+
+
+# fetch data form tokens
+
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([1, '', False, False],[(0,0,0,0,0,False), (19,19,20,0,0,True)],(0,0,0,0,0)),
+	([2, '', False, False],[(0,0,0,0,0,False), (19,19,20,0,0,True)],(19,19,20,0,0,)),
+	([False, '', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([False, '', True, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(1,0,0,0,0,0), (2,19,19,20,0,0)]),
+	([False, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([1, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 0),
+	([2, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 19),
+	([1, 'maly_pokoj', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 0),
+	([2, 'maly_pokoj', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 19),
+	([2, 'kuchnia', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 20),
+	([1, '', False, True], [(2,1,5,8,0,False), (19,19,20,0,0,True)], {'salon': 2, 'maly_pokoj':1, 'kuchnia':5, 'WC':8, 'outside':0})
+	))
+def test_fetch_data_from_tokens(input_data, data_to_tbl, expected, table_tokens, SQL_obj):
+	conn = table_tokens
+	for tup_row in data_to_tbl:
+		tup, s_temp = tup_row[:-1], tup_row[-1] 
+		SQL_obj.insert_data_token_table(conn = conn, tokens_int = tup, seted_temperature = s_temp)
+	row, room_name, with_id, show_dict = input_data
+	from_method = SQL_obj.fetch_data_from_tokens(conn = conn, row = row, room_name = room_name, with_id = with_id, show_dict=show_dict)
+	assert from_method == expected
 
 ## SQL
 	## tbl temperature_humidity
@@ -324,7 +361,7 @@ def test_fetch_all_data_from_sockets_raise_err():
 # 	assert expected == from_method
 
 
-##CSV
+#CSV
 # @pytest.mark.parametrize('time_examples',(
 # 	(['23-10-2019,08:00', '24-10-2019,10:00', '25-10-2019,14:00']),
 # 	(['30-10-2019,01:00', '31-10-2019,22:00', '31-10-2019,11:00']),
