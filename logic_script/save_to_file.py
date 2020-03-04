@@ -347,7 +347,7 @@ class HandlerSQL(HandlerFile):
 		# add somewhere method for prevent when we put does not existing row
 
 
-	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
+	def update_data_tokens(self, conn, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
 		'''Update data in table with tokens and temerature.
 			tokens_int: tuple with tokens int's.
 			temperature_int: tuple with seted temperature on haters in int format'''
@@ -359,12 +359,12 @@ class HandlerSQL(HandlerFile):
 						WC = ?,
 						outside = ?
 						WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, tuple_data)
 		# without last one (in this case row no.)		
 		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
 														tuple_data[-1]))
-		self.conn.commit()
+		conn.commit()
 
 ## FETCH DATA
 	
@@ -416,12 +416,21 @@ class HandlerSQL(HandlerFile):
 		elif row:
 			# return as tuple without id
 			return fetched_data[row-1][1:]
-		else:
-			return [tup[1:] for tup in fetched_data]
+		# else:
+		# 	return [tup[1:] for tup in fetched_data]
 
 
 	def fetch_data_from_tokens(self, conn, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
 		'''Fetch all data from error_tokens_and... table'''
+		if type(row) == int:
+			if row <= 0:
+				raise MyExceptions(mgs=f'{row} <=0. Must be grater than 0.')
+		else:
+			if row:
+				raise MyExceptions(mgs=f'{row} Must be int.')
+		if type(with_id) != bool or type(show_dict) != bool:
+			raise MyExceptions(mgs=f'{with_id} Must be bool.' if type(with_id) != bool else f'{show_dict} Must be bool.')
+		
 		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
 		cursor = conn.cursor()
 		cursor.execute(sql)

@@ -304,6 +304,45 @@ def test_fetch_data_from_tokens(input_data, data_to_tbl, expected, table_tokens,
 	from_method = SQL_obj.fetch_data_from_tokens(conn = conn, row = row, room_name = room_name, with_id = with_id, show_dict=show_dict)
 	assert from_method == expected
 
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([20,'',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([0, '',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([True,'',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1,20,False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([2, 'something', False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1, '', 'False', False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1, '', False, 'True'], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	))
+def test_fetch_data_from_tokens_raise_err(input_data, data_to_tbl, table_tokens, SQL_obj):
+	conn = table_tokens
+	for tup_row in data_to_tbl:
+		tup, s_temp = tup_row[:-1], tup_row[-1] 
+		SQL_obj.insert_data_token_table(conn=conn, tokens_int=tup, seted_temperature=s_temp)
+	with pytest.raises(Exception):
+		row, room_name, with_id, show_dict = input_data
+		from_method = SQL_obj.fetch_data_from_tokens(conn=conn, row=row, room_name=room_name, with_id=with_id, show_dict=show_dict)
+
+## SQL UPDATE
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([(0,0,0,0,0), False, 1], [(0,1,1,0,0), (19,19,20,0,0)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([False, (100,100,100,100,200), 2], [(0,1,1,0,0), (19,19,20,0,0)], [(0,1,1,0,0), (100,100,100,100,200)]),
+	))
+def test_update_tokens(input_data, data_to_tbl, expected, SQL_obj, table_tokens):
+	# 1. create table + insert data
+	conn = table_tokens
+	for tokens_int in data_to_tbl:
+		SQL_obj.insert_data_token_table(conn=conn, tokens_int=tokens_int, seted_temperature=False)
+	# 2. unzip args
+	tokens_int, temperature_int, row = input_data
+	# 3. call method
+	from_method = SQL_obj.update_data_tokens(conn=conn, tokens_int=tokens_int, temperature_int=temperature_int, row=row)
+	# 4. fetch data after we called method
+	fetched_data = SQL_obj.fetch_data_from_tokens(conn=conn)
+	# 5. make assertion
+	assert fetched_data == expected
+
+
 ## SQL
 	## tbl temperature_humidity
 
