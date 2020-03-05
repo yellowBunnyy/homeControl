@@ -173,6 +173,14 @@ def create_table_temperature_cursor(conn):
 	cursor.execute(sql)	
 	yield cursor
 
+@pytest.mark.parametrize('input_str, expected', (
+	('10:20', True),
+	('10:201', False),
+	))
+def test_time_str_validation(input_str, expected, SQL_obj):
+	from_method = SQL_obj.time_str_validation(str_time=input_str)
+	assert from_method == expected
+
 ## fetch data
 
 # fetch all data from temp
@@ -327,6 +335,7 @@ def test_fetch_data_from_tokens_raise_err(input_data, data_to_tbl, table_tokens,
 @pytest.mark.parametrize('input_data, data_to_tbl, expected', (
 	([(0,0,0,0,0), False, 1], [(0,1,1,0,0), (19,19,20,0,0)], [(0,0,0,0,0), (19,19,20,0,0)]),
 	([False, (100,100,100,100,200), 2], [(0,1,1,0,0), (19,19,20,0,0)], [(0,1,1,0,0), (100,100,100,100,200)]),
+
 	))
 def test_update_tokens(input_data, data_to_tbl, expected, SQL_obj, table_tokens):
 	# 1. create table + insert data
@@ -341,6 +350,97 @@ def test_update_tokens(input_data, data_to_tbl, expected, SQL_obj, table_tokens)
 	fetched_data = SQL_obj.fetch_data_from_tokens(conn=conn)
 	# 5. make assertion
 	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([(0,0,0,0,1,1), False, 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([True, (0,0,0,0,1), 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([(1,1,1,1,0), False, 3], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([(1,1,1,1,0), (22,23,24,25,26), 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	))
+def test_update_tokens_raise_err(input_data, data_to_tbl, SQL_obj, table_tokens):
+	conn = table_tokens
+	#create table + insert data
+	for tokens_int in data_to_tbl:
+		SQL_obj.insert_data_token_table(conn=conn, 
+			tokens_int=tokens_int, seted_temperature=False)
+	# unzip input_data
+	tokens_int, temperature_int, row = input_data
+	#call method
+	with pytest.raises(Exception):
+		from_method = SQL_obj.update_data_tokens(conn=conn, 
+			tokens_int=tokens_int, temperature_int=temperature_int, row=row)
+	
+# update temperature
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([(0,0,0,0,100), True], [(1,2,3,4,5), (20,30,40,50,60)], [(1,0,0,0,0,100),(2,20,30,40,50,60)]),
+	([(200,300,40,0,100), False], [(1,2,3,4,5), (20,30,40,50,60)], [(1,1,2,3,4,5),(2,200,300,40,0,100)]),
+	))
+def test_update_data_in_temperature(input_data, data_to_tbl, expected, SQL_obj, table_temperature):
+	#crete connection variable
+	conn = table_temperature
+	#create table + insert data
+	for tuple_int in data_to_tbl:		
+		SQL_obj.insert_data_to_temperature(conn=conn, tuple_int=tuple_int)
+	# unzip input_data
+	temp_or_humidity, temperature = input_data
+	#call method	
+	from_method = SQL_obj.update_data_in_temperature(conn=conn, 
+		temp_or_humidity=temp_or_humidity, temperature=temperature)
+	#fetch data afret we called method
+	fetched_data = SQL_obj.fetch_all_data_from_temp(conn=conn)
+	#compare fetched result with expected value 
+	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([(1,2,3,4,5,6), False], [(20,20,20,20,26), (50,50,50,50,55)]),
+	([(1,2,3,4,5), (10,20,30,40,50)], [(20,20,20,20,26), (50,50,50,50,55)]),
+	([True, False], [(20,20,20,20,26), (50,50,50,50,55)]),
+	))
+def test_update_data_in_temperature_raise_err(input_data, data_to_tbl, SQL_obj, table_temperature):
+	#create conn varialbe
+	conn = table_temperature
+	#create table + insert data
+	for tuple_int in data_to_tbl:
+		SQL_obj.insert_data_to_temperature(conn=conn, tuple_int=tuple_int)	
+	#unpack arg
+	temp_or_humidity, temperature = input_data
+	with pytest.raises(Exception):
+		#call method
+		from_method = SQL_obj.update_data_in_temperature(conn=conn, 
+			temp_or_humidity=temp_or_humidity, temperature=temperature )
+
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([('00:00', '01:00'), 1], [('10:00','20:30'), ('09:23','23:09')], ('00:00', '01:00')),
+	([('00:00', '01:00'), 2], [('10:00','20:30'), ('09:23','23:09')], ('00:00', '01:00')),
+	))
+def test_update_data_in_sockets_table(input_data, data_to_tbl, expected, SQL_obj, table_sockets):
+	conn = table_sockets
+	#crate tbl + insert data
+	for times in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+	#unzip input_data
+	times, row = input_data
+	#call method
+	from_method = SQL_obj.update_data_in_sockets_table(conn=conn, times=times, row=row)
+	#fetch changed data after called method
+	fetched_data = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row)
+	# make assertion
+	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([('00:as', '01:00'), 1], [('10:00','20:30'), ('09:23','23:09')]),
+	))
+def test_update_data_in_sockets_table_raise_err(input_data, data_to_tbl, SQL_obj, table_sockets):
+	conn = table_sockets
+	#crate tbl + insert data
+	for times in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+	#unzip input_data
+	times, row = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.update_data_in_sockets_table(conn=conn, times=times, row=row)
+	
+	
 
 
 ## SQL

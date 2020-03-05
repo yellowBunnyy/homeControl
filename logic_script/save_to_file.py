@@ -137,8 +137,17 @@ class HandlerSQL(HandlerFile):
 		# 	# list with method from SQL_Handlet class
 		# 	self.initial_table_in_db()
 		pass
-			
 
+	@staticmethod
+	def time_str_validation(str_time:str):
+		patt = r'[0-5][0-9]:[0-5][0-9]'
+		is_valid_time_string = lambda patt, str_time: False if re.match(patt, str_time) and len(str_time) == 5 else True
+		if is_valid_time_string(patt, str_time):
+			return False
+		else:
+			return True
+
+		
 			
 	def initial_table_in_db(self, add_default_value:bool=True, rows_amount:int=2) -> dict:
 		'''Here we initial all tabels in data base.
@@ -309,11 +318,13 @@ class HandlerSQL(HandlerFile):
 
 ## UPDATE
 
-	def update_data_in_temperature(self, temp_or_humidity:tuple, temperature:bool=True):
+	def update_data_in_temperature(self, conn, temp_or_humidity:tuple, temperature:bool=True):
 		# temperature or humidity with id depends of input
 		# Note:
 		# 1 - is temperature
 		# 2 - is humidity
+		if not isinstance(temperature, bool):
+			raise MyExceptions(message=f'{temerature} is not bool type. Please check it.', error=ValueError )
 		data = temp_or_humidity + (1,) if temperature else temp_or_humidity + (2,)
 		sql = '''UPDATE temperature_humidity SET
 						salon = ?,
@@ -322,28 +333,29 @@ class HandlerSQL(HandlerFile):
 						WC = ?,
 						outside = ?
 						WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, data)
 		print(f'{"temp" if temperature else "humidity"} was updated {temp_or_humidity}')		
-		self.conn.commit()
-		return 
+		conn.commit()
+		 
 
-	def update_data_in_sockets_table(self, times:tuple, row:int):
+	def update_data_in_sockets_table(self, conn, times:tuple, row:int):
 		'''This method updates data in sockets table
 		times: tuple with seted hours in str format
 		row_id: row int format to update'''
 		# varible contain times in str and row id in int
+		# add function to find invalid string 
 		times += (row,)		
 		sql = '''UPDATE sockets SET
 				turn_on = ?,
 				turn_off = ?
 				WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		row_explanation = {1 : 'sockets', 2: 'heaters_switch'}
 		print('data was update in socket table {} in row {}'.format(times[:-1], 
 													row_explanation[row]))
 		cursor.execute(sql,tuple(times))
-		self.conn.commit()
+		conn.commit()
 		# add somewhere method for prevent when we put does not existing row
 
 
@@ -351,6 +363,13 @@ class HandlerSQL(HandlerFile):
 		'''Update data in table with tokens and temerature.
 			tokens_int: tuple with tokens int's.
 			temperature_int: tuple with seted temperature on haters in int format'''
+		# last row number
+		last_row_num = self.fetch_data_from_tokens(conn=conn, with_id=True)[-1][0]
+		# import wdb; wdb.set_trace()
+		if tokens_int and temperature_int:
+			raise MyExceptions(mgs=f'inserted tuple in both arg. Please check. You must select one of args', error=ValueError)
+		if row > last_row_num:
+			raise MyExceptions(mgs=f'input row out of index. Grater than {last_row_num}', error=IndexError)
 		tuple_data = tokens_int + (row,) if tokens_int else temperature_int + (row,)
 		sql = '''UPDATE errors_tokens_and_seted_temperature SET
 						salon = ?,
