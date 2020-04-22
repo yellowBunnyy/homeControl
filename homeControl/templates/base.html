@@ -1,0 +1,49 @@
+<html>
+<head>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css')}}">
+
+<!-- NAVBAR -->
+	<nav class="navbar navbar-inverse">
+	  <div class="container-fluid">
+	    <div class="navbar-header">
+	      <a class="navbar-brand" href="#">Home Control</a>
+	    </div>
+	    <ul class="nav navbar-nav">
+	      <li><a href="/">Home</a></li>
+	      <li><a href="/temp">Temperatury</a></li>
+	      <li><a href="/sockets">Gniazda i oświetlenie</a></li>
+	      <li><a href="/heat">Ustawienia ogrzewania</a></li>
+	        <!-- SHOW TIME IN NAVBAR -->
+	      <li><h4 id='show_time' href=""></h4></li>	      	
+	      	<script type="text/javascript" src="{{ url_for('static', filename='js/view_time.js')}}"></script>
+	      	<!-- END SHOW TIME -->
+	      
+	      <li><h4 id='show_date'></h4></li>
+	      	<script type="text/javascript" src="{{url_for('static', filename='js/view_date.js')}}"></script>
+	    </ul>
+	  </div>
+	</nav>
+<!--END NAVBAR  -->
+	
+
+	{% if title %}
+		<title>Home Control - {{title}}</title>
+	{% else %}
+		<title>Home Control - Home</title>
+	{% endif %}	
+	{% block contentHead %}{% endblock contentHead %}
+	<script type="text/javascript" src="{{url_for('static', filename='js/temp_update_in_base.js')}}"></script>
+
+</head>
+
+<body>
+
+	
+	{% block contentBody %}{% endblock contentBody %}	
+    
+</body>
+
+</html>

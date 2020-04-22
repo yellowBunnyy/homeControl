@@ -1,0 +1,29 @@
+h3
+{
+	color: black;
+	font-size: 30px;
+	/*float: right;*/
+	/*margin-right: 60px;*/
+}
+
+body
+{
+
+	background: silver;
+}
+
+div
+{
+	font-size: 20px;
+}
+
+h4
+{
+	color: silver;	
+	text-align: right;
+	font-size: 25px;
+	letter-spacing: 2px; /*odstęp miedzy literami dla h4*/ 
+	margin: 13px;  		/*odstęp miedzy selektormi w tym wypadku h4 i h4 (czas i data)*/
+
+
+}

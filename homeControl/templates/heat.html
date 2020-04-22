@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+	{% block contentHead %}
+
+	{% endblock contentHead %}
+	{% block contentBody %}
+		<div>ogrzewanie</div>
+		<select id='ONchooseBox'></select>
+		<select id='OFFchooseBox'></select>
+		<script type="module" src="{{ url_for('static', filename='js/chosebox_logic.js')}}"></script>
+		<button id='save'>zapisz</button>		
+		<div id='saved_time'>info</div>
+		<br>
+		</br>
+		<div>Ustaw temperature</div>
+		<div>Salon</div>
+			<select id='select_temp_salon'></select>
+				<script type="module">
+					import {view_temp_in_choosebox} from './static/js/chosebox_logic.js'
+					view_temp_in_choosebox('select_temp_salon',19,26);
+				</script>
+				<div>Ustawiona temp: <b id='temp_salon'>temp</b></div>
+
+		<div>Pokój mały</div>
+			<select id='select_temp_pm'></select>
+				<script type="module">
+					import {view_temp_in_choosebox} from './static/js/chosebox_logic.js'
+					view_temp_in_choosebox('select_temp_pm',19,26);
+				</script>
+				<div>Ustawiona temp: <b id='temp_pm'>temp</b></div>
+
+		<div>Kuchnia</div>
+			<select id='select_temp_k'></select>
+				<script type="module">
+					import {view_temp_in_choosebox} from './static/js/chosebox_logic.js'
+					view_temp_in_choosebox('select_temp_k',19,26);
+				</script>
+				<div>Ustawiona temp: <b id='temp_k'>temp</b></div>				
+		<button id='save_temps'>zapisz</button>
+		<script type="text/javascript" src="{{ url_for('static', filename='js/heat_logic.js')}}"></script>
+	{% endblock contentBody %}
