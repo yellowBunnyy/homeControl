@@ -1,5 +1,5 @@
 import os, json, sys, datetime, csv, sqlite3, re
-os.chdir('/home/pi/Desktop/env/fl/src')
+os.chdir('/home/pi/Desktop/env/fl/homeControl')
 print(os.getcwd())
 
 class MyExceptions(Exception):

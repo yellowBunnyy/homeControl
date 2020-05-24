@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, Response
 import json, os, datetime
-os.chdir('/home/pi/Desktop/env/fl/src')
+os.chdir('/home/pi/Desktop/env/fl/homeControl')
 from logic_script import virtual_relay, save_to_file, dht_handler
 
 app = Flask(__name__)

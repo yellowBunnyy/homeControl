@@ -76,7 +76,7 @@ def save_to_file_obj_not_called():
 # create file 
 @pytest.fixture(name='test_json_file')
 def create_test_file():
-	path = r'/home/pi/Desktop/env/fl/src/logic_script/test.json'
+	path = r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json'
 	content = {'salon':1, 'wc':2}
 	with open(path, 'w') as f:
 		f.write(json.dumps(content))
@@ -97,7 +97,7 @@ def no_request(monkeypath):
 # create backend db file
 @pytest.fixture(name='backend_db_file')
 def create_db_file():
-	db_path = r'/home/pi/Desktop/env/fl/src/test_db.db'
+	db_path = r'/home/pi/Desktop/env/fl/homeControl/test_db.db'
 	with open(db_path, 'w') as f:
 		f.write('')
 		yield db_path
@@ -851,9 +851,9 @@ def test_set_time():
 # create container
 
 @pytest.mark.parametrize('input_data, expected', (
-	((r'/home/pi/Desktop/env/fl/src/logic_script', False), ValueError),
-	((r'/home/pi/Desktop/env/fl/src/logic_script/test.txt', False), 'container was created!!'),
-	((r'/home/pi/Desktop/env/fl/src/logic_script/test.txt', True), 'container exist!!'),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script', False), ValueError),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt', False), 'container was created!!'),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt', True), 'container exist!!'),
 	))
 def test_create_container(input_data, expected,  handler_file_obj):
 	path, bool_val = input_data
@@ -871,7 +871,7 @@ def test_create_container(input_data, expected,  handler_file_obj):
 # save to json
 
 def test_save_to_json(handler_file_obj):
-	path = r'/home/pi/Desktop/env/fl/src/logic_script/test.txt'
+	path = r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt'
 	content = {'somthing': 'lol'}
 	from_method = handler_file_obj.save_to_json(path=path, content=content)
 	assert from_method
@@ -894,14 +894,14 @@ def test_load_from_json(input_key, test_json_file, handler_file_obj):
 
 
 @pytest.mark.parametrize('input_data, content', (
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', None], ''),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', None], ''),
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		{'salon':1, 'wc':2}),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'salon'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'salon'],
 		'common string'),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		'{"blaca"}'),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		'{blaca}'),
 	))
 def test_load_from_json_raise_err(input_data, content, handler_file_obj):
@@ -917,8 +917,8 @@ def test_load_from_json_raise_err(input_data, content, handler_file_obj):
 
 # update file
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src',{'salon': 12, 'maly_pokoj':123, 'WC': 900},'WC','changed value', None]),
-	(['/home/pi/Desktop/env/fl/src',{'salon': 12, 'maly_pokoj':123, 'WC': {'temp': 20, 'humidity': 99}},'WC','changed value', 'temp']),
+	(['/home/pi/Desktop/env/fl/homeControl',{'salon': 12, 'maly_pokoj':123, 'WC': 900},'WC','changed value', None]),
+	(['/home/pi/Desktop/env/fl/homeControl',{'salon': 12, 'maly_pokoj':123, 'WC': {'temp': 20, 'humidity': 99}},'WC','changed value', 'temp']),
 	))
 def test_update_file(input_data, handler_file_obj, handler_file_not_called):
 	path, mocked_content, key, swap_content, key2 = input_data
@@ -951,7 +951,7 @@ def test_update_file_raise_err(input_data, handler_file_obj, handler_file_not_ca
 # delete data from file
 
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src', 'salon', {'salon':23, 'WC':34, 'outside': -1}]),
+	(['/home/pi/Desktop/env/fl/homeControl', 'salon', {'salon':23, 'WC':34, 'outside': -1}]),
 	))
 def test_delete_data_from_file(input_data, handler_file_not_called, handler_file_obj):
 	path, key, fake_content = input_data		
@@ -966,7 +966,7 @@ def test_delete_data_from_file(input_data, handler_file_not_called, handler_file
 
 
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src', 'fakeKey', {'salon':23, 'WC':34, 'outside': -1}]),
+	(['/home/pi/Desktop/env/fl/homeControl', 'fakeKey', {'salon':23, 'WC':34, 'outside': -1}]),
 	(['/fake/directory', 'WC', {'salon':23, 'WC':34, 'outside': -1}]),
 	))
 def test_delete_data_raise_err(input_data, handler_file_not_called, handler_file_obj):
