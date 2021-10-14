@@ -11,6 +11,9 @@ This project monitor:
 Regulate temperature on heaters using termostated regulator:
     - SALUS T30NC 24V (24V for safty)
 Turn on and off circuit AC 230V.
+Above regulation we can set on time scope.
+Data from sensors we aggregate and store in database where can 
+plot grahps.
 
 ## Getting Started
 
