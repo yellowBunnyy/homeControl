@@ -125,19 +125,29 @@ class HandlerSQL(HandlerFile):
 		'''Here we initial conection to database and create
 		cursor object form connect object.'''
 		# create connection with db and create cursor
-		db_file = self.STATIC_DB_ERRORS_PATH
-		if not db_file:
-			raise MyErrors('Please insert DataBase file path!!')
-		else:
-			self.db_file = db_file
-			self.conn = sqlite3.connect(db_file, check_same_thread=False)
-			self.c = self.conn.cursor()
-			print('have connetction')
-			# this var have reference to dict with key as table_name and value as
-			# list with method from SQL_Handlet class
-			self.initial_table_in_db()
-			
+		# db_file = self.STATIC_DB_ERRORS_PATH
+		# if not db_file:
+		# 	raise MyErrors('Please insert DataBase file path!!')
+		# else:
+		# 	self.db_file = db_file
+		# 	self.conn = sqlite3.connect(db_file, check_same_thread=False)
+		# 	self.c = self.conn.cursor()
+		# 	print('have connetction')
+		# 	# this var have reference to dict with key as table_name and value as
+		# 	# list with method from SQL_Handlet class
+		# 	self.initial_table_in_db()
+		pass
 
+	@staticmethod
+	def time_str_validation(str_time:str):
+		patt = r'[0-5][0-9]:[0-5][0-9]'
+		is_valid_time_string = lambda patt, str_time: False if re.match(patt, str_time) and len(str_time) == 5 else True
+		if is_valid_time_string(patt, str_time):
+			return False
+		else:
+			return True
+
+		
 			
 	def initial_table_in_db(self, add_default_value:bool=True, rows_amount:int=2) -> dict:
 		'''Here we initial all tabels in data base.
@@ -147,7 +157,7 @@ class HandlerSQL(HandlerFile):
 		SQL_dict = {
 		self.SQL_TABELS_NAMES[0]: [self.table_sockets,
 					self.insert_data_to_sockets_table,
-					('00:00','00:00')], 
+					('00:00','00:00')],
 		self.SQL_TABELS_NAMES[1]: 
 						[self.table_errors_tokens_and_seted_temperature,
 						self.insert_data_token_table,
@@ -184,21 +194,22 @@ class HandlerSQL(HandlerFile):
 						}		
 
 
-	def recognize_if_table_in_db_exist(self, table_name:str) -> bool:
+	def recognize_if_table_in_db_exist(self, cursor, table_name:str) -> bool:
 		'''Recognizon if table is in data base. If is return false
 			otherwise return true'''
 		# script search table which is input --> (table_name) arg this metchod
-		self.c.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
-		if self.c.fetchone():
+		cursor.execute('''SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'''.format(table_name))
+		# import wdb; wdb.set_trace()
+		if cursor.fetchone():
 			print('db exist --> flag :false')
 			return False
 		else:
 			print('db does not exist --> flag: true')
 			return True
 
-	def fetch_column_names(self, table_name:str)-> list:
+	def fetch_column_names(self, cursor, table_name:str)-> list:
 		'''This method fetch comumns names and return them in list'''
-		column_list = self.c.execute(f'''SELECT * from {table_name}''')
+		column_list = cursor.execute(f'''SELECT * from {table_name}''')
 		return [row[0] for row in column_list.description]
 
 # CREATE TABLE
@@ -237,18 +248,20 @@ class HandlerSQL(HandlerFile):
 				outside integer);'''
 		return self.SQL_TABELS_NAMES[1], sql
 
-	def create_table(self, table_sheet:tuple):
+	def create_table(self, cursor, table_sheet:tuple):
 		'''Create table in data base. Where first value in tuple is table name
 		second are sql sheet to create table'''
 		# create new table
-		cursor = self.conn.cursor()
 		cursor.execute(table_sheet[1])
 		print('table was created --> {}'.format(table_sheet[0]))
-
+		return True
 
 ### INSERT
 
-	def insert_data_to_temperature(self, tuple_int:tuple):
+	def insert_data_to_temperature(self, conn, tuple_int:tuple):
+		'''tuple: tuple with 5 int's temperature value '''
+		if type(tuple_int) != tuple:
+			raise MyExceptions(message=f'{tuple_int} is not tuple!!', error = TypeError) 
 		sql = '''INSERT INTO 'temperature_humidity' (
 				salon,
 				maly_pokoj,
@@ -256,28 +269,39 @@ class HandlerSQL(HandlerFile):
 				WC,
 				outside)
 				VALUES (?,?,?,?,?)'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()		
 		cursor.execute(sql, tuple_int)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {tuple_int}')
 		last_row = cursor.lastrowid
 		return last_row
 
-	def insert_data_to_sockets_table(self, times:tuple) -> int:
+	def insert_data_to_sockets_table(self, conn, times:tuple) -> int:
 		'''return last row in int'''
+		if type(times) != tuple:
+			raise MyExceptions(message=f'{times} is not tuple!!', error = TypeError)
+		patt = r'[0-5][0-9]:[0-5][0-9]'
+		is_valid_time_string = lambda patt, s_time: False if re.match(patt, s_time) and len(s_time) == 5 else True
+		for s_time in times:
+			if is_valid_time_string(patt, s_time):
+				raise MyExceptions(message=f'{s_time} is not "00:00" format time!!', error = ValueError)
 		sql = '''INSERT INTO sockets (
 				turn_on, turn_off)
 				VALUES(?,?)'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, times)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {times}')
 		last_row = cursor.lastrowid
 		return last_row
 
-	def insert_data_token_table(self, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
+	def insert_data_token_table(self, conn, tokens_int:tuple=False, seted_temperature:tuple=False) -> int:
 		'''Insert to table in data base tuple with tokens_int or tuple with value ints
-		seted temperature return last row in int'''
+		seted temperature for heaters return last row in int'''
+		if isinstance(tokens_int, (bool, tuple)) and isinstance(seted_temperature, (bool, tuple)):
+			pass
+		else:
+			raise MyExceptions(message=f'one of args are not tuple or bool obj', error = ValueError)
 		sql = '''INSERT INTO errors_tokens_and_seted_temperature (
 				salon,
 				maly_pokoj,
@@ -285,20 +309,22 @@ class HandlerSQL(HandlerFile):
 				WC,
 				outside)
 				VALUES (?,?,?,?,?)'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, tokens_int if tokens_int else seted_temperature)
-		self.conn.commit()
+		conn.commit()
 		print(f'data was added {tokens_int if tokens_int else seted_temperature}')
 		last_row = cursor.lastrowid
 		return last_row
 
 ## UPDATE
 
-	def update_data_in_temperature(self, temp_or_humidity:tuple, temperature:bool=True):
+	def update_data_in_temperature(self, conn, temp_or_humidity:tuple, temperature:bool=True):
 		# temperature or humidity with id depends of input
 		# Note:
 		# 1 - is temperature
 		# 2 - is humidity
+		if not isinstance(temperature, bool):
+			raise MyExceptions(message=f'{temerature} is not bool type. Please check it.', error=ValueError )
 		data = temp_or_humidity + (1,) if temperature else temp_or_humidity + (2,)
 		sql = '''UPDATE temperature_humidity SET
 						salon = ?,
@@ -307,34 +333,43 @@ class HandlerSQL(HandlerFile):
 						WC = ?,
 						outside = ?
 						WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, data)
 		print(f'{"temp" if temperature else "humidity"} was updated {temp_or_humidity}')		
-		self.conn.commit()
+		conn.commit()
+		 
 
-	def update_data_in_sockets_table(self, times:tuple, row:int):
+	def update_data_in_sockets_table(self, conn, times:tuple, row:int):
 		'''This method updates data in sockets table
 		times: tuple with seted hours in str format
 		row_id: row int format to update'''
 		# varible contain times in str and row id in int
+		# add function to find invalid string 
 		times += (row,)		
 		sql = '''UPDATE sockets SET
 				turn_on = ?,
 				turn_off = ?
 				WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		row_explanation = {1 : 'sockets', 2: 'heaters_switch'}
 		print('data was update in socket table {} in row {}'.format(times[:-1], 
 													row_explanation[row]))
 		cursor.execute(sql,tuple(times))
-		self.conn.commit()
+		conn.commit()
 		# add somewhere method for prevent when we put does not existing row
 
 
-	def update_data_tokens(self, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
+	def update_data_tokens(self, conn, tokens_int:tuple=False, temperature_int:tuple=False, row:int=False):
 		'''Update data in table with tokens and temerature.
 			tokens_int: tuple with tokens int's.
 			temperature_int: tuple with seted temperature on haters in int format'''
+		# last row number
+		last_row_num = self.fetch_data_from_tokens(conn=conn, with_id=True)[-1][0]
+		# import wdb; wdb.set_trace()
+		if tokens_int and temperature_int:
+			raise MyExceptions(mgs=f'inserted tuple in both arg. Please check. You must select one of args', error=ValueError)
+		if row > last_row_num:
+			raise MyExceptions(mgs=f'input row out of index. Grater than {last_row_num}', error=IndexError)
 		tuple_data = tokens_int + (row,) if tokens_int else temperature_int + (row,)
 		sql = '''UPDATE errors_tokens_and_seted_temperature SET
 						salon = ?,
@@ -343,25 +378,28 @@ class HandlerSQL(HandlerFile):
 						WC = ?,
 						outside = ?
 						WHERE id = ?'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql, tuple_data)
 		# without last one (in this case row no.)		
 		print('data was update in tokens table {} row {}.'.format(tuple_data[:-1],
 														tuple_data[-1]))
-		self.conn.commit()
+		conn.commit()
 
 ## FETCH DATA
 	
-	def fetch_all_data_from_temp(self, row:int=False, temperature_dict:bool=False, pin_dict:bool=False) -> (dict, list):
+	def fetch_all_data_from_temp(self, conn, row:int=False, temperature_dict:bool=False, pin_dict:bool=False) -> (dict, list):
 		'''
 		1 - temps,
 		2 - humidity
+		row must be > 0
 				'''
+		if type(row) == int and row <= 0:
+			raise MyExceptions(message=f'{row} <=0. Must be grater than 0', error=ValueError)
 		sql = '''SELECT * from temperature_humidity'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
+		# import wdb; wdb.set_trace()
 		fetched_data = cursor.fetchall()
-
 		if temperature_dict:
 			# return dict obj where keys are room names and value 
 			#	are dict obj with temp and humidity value			
@@ -373,17 +411,21 @@ class HandlerSQL(HandlerFile):
 			dict_obj = dict(zip(self.room_names, fetched_data[2][1:]))
 			return dict_obj							
 		if row:
-			# data in tuple without row			
+			# data in tuple without row
+			row = 1 if type(row) == bool else row			
 			return fetched_data[row - 1][1:]
 		return fetched_data
 
-	def fetch_all_data_from_sockets(self, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
+
+	def fetch_all_data_from_sockets(self, conn, row:int=False, turn_on:bool=False, turn_off:bool=False) -> (list, int):
 		'''Fetch all data from socket table.
 		row: row number.
 		turn_on: return hour in str format if true
 		turn_off: return hour in str format if true'''
+		if row <= 0 or type(turn_on) != bool or type(turn_off) != bool:
+			raise MyExceptions(message=f'{row} <=0. Must be grater than 0' if row <= 0 else f'{turn_on} != bool' if type(turn_on) != bool else f'{turn_off} != bool', error=ValueError)
 		sql = '''SELECT * from sockets'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
 		fetched_data = cursor.fetchall()		
 		if row and turn_on:
@@ -393,14 +435,23 @@ class HandlerSQL(HandlerFile):
 		elif row:
 			# return as tuple without id
 			return fetched_data[row-1][1:]
-		else:
-			return [tup[1:] for tup in fetched_data]
+		# else:
+		# 	return [tup[1:] for tup in fetched_data]
 
 
-	def fetch_data_from_tokens(self, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
+	def fetch_data_from_tokens(self, conn, row:int=False, room_name:str='', with_id:bool=False, show_dict=False) -> (list, int):
 		'''Fetch all data from error_tokens_and... table'''
+		if type(row) == int:
+			if row <= 0:
+				raise MyExceptions(mgs=f'{row} <=0. Must be grater than 0.')
+		else:
+			if row:
+				raise MyExceptions(mgs=f'{row} Must be int.')
+		if type(with_id) != bool or type(show_dict) != bool:
+			raise MyExceptions(mgs=f'{with_id} Must be bool.' if type(with_id) != bool else f'{show_dict} Must be bool.')
+		
 		sql = '''SELECT * from errors_tokens_and_seted_temperature'''
-		cursor = self.conn.cursor()
+		cursor = conn.cursor()
 		cursor.execute(sql)
 		all_data = cursor.fetchall()
 		# print(all_data)

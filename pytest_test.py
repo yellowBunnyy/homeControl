@@ -1,8 +1,9 @@
 from logic_script import dht_handler, save_to_file, virtual_relay
 room_names = save_to_file.HandlerFile().room_names
-import pytest, flask_home, os, Adafruit_DHT, flask, json, random
+import pytest, flask_home, os, Adafruit_DHT, flask, json, random, sqlite3
 from unittest.mock import patch
 from unittest.mock import Mock
+from logic_script.save_to_file import MyExceptions
 
 
 test_path = os.path.join(os.getcwd(),'logic_script','test_csv.csv')
@@ -75,7 +76,7 @@ def save_to_file_obj_not_called():
 # create file 
 @pytest.fixture(name='test_json_file')
 def create_test_file():
-	path = r'/home/pi/Desktop/env/fl/src/logic_script/test.json'
+	path = r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json'
 	content = {'salon':1, 'wc':2}
 	with open(path, 'w') as f:
 		f.write(json.dumps(content))
@@ -90,83 +91,433 @@ def create_test_file():
 def no_request(monkeypath):
 	monkeypath.delattr('flask.request.method')
 	
+##### HandlerSQL class
+
+
+# create backend db file
+@pytest.fixture(name='backend_db_file')
+def create_db_file():
+	db_path = r'/home/pi/Desktop/env/fl/homeControl/test_db.db'
+	with open(db_path, 'w') as f:
+		f.write('')
+		yield db_path
+	os.remove(db_path)
+
+
+# create connection
+@pytest.fixture(name='conn')
+def create_connection(backend_db_file):
+	conn = sqlite3.connect(backend_db_file)
+	yield conn
+	conn.close()
+
+# created cursor
+@pytest.fixture(name='cursor')
+def create_cursor(backend_db_file):
+	conn = sqlite3.connect(backend_db_file)
+	cursor = conn.cursor()
+	yield cursor
+	conn.close()	
+
+
+# cursor with maked socket table
+@pytest.fixture(name='table_sockets')
+def create_table_socket(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS sockets (
+				id integer PRIMARY KEY,
+				turn_on text,
+				turn_off text);
+		'''
+	cursor = conn.cursor()
+	cursor.execute(sql)
+	yield conn
+
+#cursor with maked errors tokens table
+@pytest.fixture(name='table_tokens')
+def create_table_token(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS errors_tokens_and_seted_temperature (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)
+	yield conn
+
+#cursor with maked temp & humidity table
+@pytest.fixture(name='table_temperature')
+def create_table_temperature(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield conn
+
+@pytest.fixture(name='table_temperature_cursor')
+def create_table_temperature_cursor(conn):
+	sql = '''CREATE TABLE IF NOT EXISTS 'temperature_humidity' (
+				id integer PRIMARY KEY,
+				salon integer,
+				maly_pokoj integer,
+				kuchnia integer,
+				WC integer,
+				outside integer);'''
+	cursor = conn.cursor()
+	cursor.execute(sql)	
+	yield cursor
+
+@pytest.mark.parametrize('input_str, expected', (
+	('10:20', True),
+	('10:201', False),
+	))
+def test_time_str_validation(input_str, expected, SQL_obj):
+	from_method = SQL_obj.time_str_validation(str_time=input_str)
+	assert from_method == expected
+
+## fetch data
+
+# fetch all data from temp
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	((20,21,22,23,24), [False, False, False], [(1, 20, 21, 22, 23, 24)]),
+	))
+def test_fetch_all_data_from_temp_one_row(data_to_table, input_data, expected, SQL_obj, table_temperature):
+	table_temperature_conn = table_temperature
+	SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=data_to_table)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=table_temperature_conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('data_to_table, input_data, expected', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[False, False, False], # return pure fetchall()
+		[(1, 20, 21, 22, 23, 24),(2,11,22,33,44,55), (3,1,2,3,4,5)]),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[1, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[True, False, False], # return wanted row > 0
+		(20,21,22,23,24)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[2, False, False], # return wanted. row > 0
+		(11,22,33,44,55)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[3, False, False], # return wanted. row > 0
+		(1,2,3,4,5)),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, True, False], # return dict with data e.g. look down 
+		{'salon': {'temp':20, 'humidity':11}, 'maly_pokoj': {'temp':21, 'humidity':22},
+		'kuchnia': {'temp':22, 'humidity':33}, 'WC': {'temp':23, 'humidity':44}, 'outside':{'temp':24, 'humidity':55}}),
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)],
+		[False, False, True], # return wanted row > 0
+		{'salon':1, 'maly_pokoj':2, 'kuchnia':3, 'WC':4, 'outside':5}),
+	))
+def test_fetch_all_data_from_temp_multiple_rows(data_to_table, input_data, expected, SQL_obj, table_temperature, conn):
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('data_to_table, input_data', (
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[10, False, False]), # row out of range	
+	([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+		[0, False, False]),
+	# ([(20,21,22,23,24), (11,22,33,44,55), (1,2,3,4,5)], 
+	# 	[True, False, False]),
+	))
+def test_fetch_all_data_from_temp_multiple_rows_raise_err(data_to_table, input_data, SQL_obj, table_temperature, conn):
+	#check row == 0
+	table_temperature_conn = table_temperature
+	for row_with_data in data_to_table:
+		SQL_obj.insert_data_to_temperature(conn=table_temperature_conn, tuple_int=row_with_data)
+	row, temperature_dict, pin_dict = input_data
+	# import wdb; wdb.set_trace()
+	with pytest.raises(Exception):
+		from_method = SQL_obj.fetch_all_data_from_temp(conn=conn,
+												row=row, 
+												temperature_dict=temperature_dict,
+												pin_dict=pin_dict)
+
+# fetch all data from socket
+@pytest.mark.parametrize('input_data, data_to_table, expected', (
+	([1, True, False], [('00:12','10:20'), ('09:48', '23:59')], '00:12'), # return turn_on time
+	([1, False, True], [('00:12','10:20'), ('09:48', '23:59')], '10:20'), # return turn_off time
+	([1, False, False], [('00:12','10:20'), ('09:48', '23:59')], ('00:12','10:20')), # return row as tuple
+	))
+def test_fetch_all_data_from_sockets(input_data, data_to_table, expected, SQL_obj, table_sockets):
+	row, turn_on, turn_off = input_data
+	conn = table_sockets
+	for tup_row in data_to_table:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=tup_row)
+	from_method = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row, turn_on=turn_on, turn_off=turn_off)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data, data_to_tbl',(
+	([0, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([20, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([1, 'False', False], [('00:12','10:20'), ('09:48', '23:59')]),
+	([1, True, 'True'], [('00:12','10:20'), ('09:48', '23:59')]),
+	(['1', True, 'True'], [('00:12','10:20'), ('09:48', '23:59')]),
+	([False, False, False], [('00:12','10:20'), ('09:48', '23:59')]),
+	))
+def test_fetch_all_data_from_sockets_raise_err(input_data, data_to_tbl, table_sockets, SQL_obj):
+	conn = table_sockets
+	row, turn_on, turn_off = input_data
+	for tup_row in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=tup_row)
+	with pytest.raises(Exception):
+		from_method = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row, turn_on=turn_on, turn_off=turn_off)
+
+
+# fetch data form tokens
+
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([1, '', False, False],[(0,0,0,0,0,False), (19,19,20,0,0,True)],(0,0,0,0,0)),
+	([2, '', False, False],[(0,0,0,0,0,False), (19,19,20,0,0,True)],(19,19,20,0,0,)),
+	([False, '', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([False, '', True, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(1,0,0,0,0,0), (2,19,19,20,0,0)]),
+	([False, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([1, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 0),
+	([2, 'salon', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 19),
+	([1, 'maly_pokoj', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 0),
+	([2, 'maly_pokoj', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 19),
+	([2, 'kuchnia', False, False], [(0,0,0,0,0,False), (19,19,20,0,0,True)], 20),
+	([1, '', False, True], [(2,1,5,8,0,False), (19,19,20,0,0,True)], {'salon': 2, 'maly_pokoj':1, 'kuchnia':5, 'WC':8, 'outside':0})
+	))
+def test_fetch_data_from_tokens(input_data, data_to_tbl, expected, table_tokens, SQL_obj):
+	conn = table_tokens
+	for tup_row in data_to_tbl:
+		tup, s_temp = tup_row[:-1], tup_row[-1] 
+		SQL_obj.insert_data_token_table(conn = conn, tokens_int = tup, seted_temperature = s_temp)
+	row, room_name, with_id, show_dict = input_data
+	from_method = SQL_obj.fetch_data_from_tokens(conn = conn, row = row, room_name = room_name, with_id = with_id, show_dict=show_dict)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([20,'',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([0, '',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([True,'',False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1,20,False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([2, 'something', False, False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1, '', 'False', False], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	([1, '', False, 'True'], [(2,1,5,8,0,False), (19,19,20,0,0,True)]),
+	))
+def test_fetch_data_from_tokens_raise_err(input_data, data_to_tbl, table_tokens, SQL_obj):
+	conn = table_tokens
+	for tup_row in data_to_tbl:
+		tup, s_temp = tup_row[:-1], tup_row[-1] 
+		SQL_obj.insert_data_token_table(conn=conn, tokens_int=tup, seted_temperature=s_temp)
+	with pytest.raises(Exception):
+		row, room_name, with_id, show_dict = input_data
+		from_method = SQL_obj.fetch_data_from_tokens(conn=conn, row=row, room_name=room_name, with_id=with_id, show_dict=show_dict)
+
+## SQL UPDATE
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([(0,0,0,0,0), False, 1], [(0,1,1,0,0), (19,19,20,0,0)], [(0,0,0,0,0), (19,19,20,0,0)]),
+	([False, (100,100,100,100,200), 2], [(0,1,1,0,0), (19,19,20,0,0)], [(0,1,1,0,0), (100,100,100,100,200)]),
+
+	))
+def test_update_tokens(input_data, data_to_tbl, expected, SQL_obj, table_tokens):
+	# 1. create table + insert data
+	conn = table_tokens
+	for tokens_int in data_to_tbl:
+		SQL_obj.insert_data_token_table(conn=conn, tokens_int=tokens_int, seted_temperature=False)
+	# 2. unzip args
+	tokens_int, temperature_int, row = input_data
+	# 3. call method
+	from_method = SQL_obj.update_data_tokens(conn=conn, tokens_int=tokens_int, temperature_int=temperature_int, row=row)
+	# 4. fetch data after we called method
+	fetched_data = SQL_obj.fetch_data_from_tokens(conn=conn)
+	# 5. make assertion
+	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([(0,0,0,0,1,1), False, 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([True, (0,0,0,0,1), 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([(1,1,1,1,0), False, 3], [(1,1,1,1,0), (22,23,24,25,26)]),
+	([(1,1,1,1,0), (22,23,24,25,26), 1], [(1,1,1,1,0), (22,23,24,25,26)]),
+	))
+def test_update_tokens_raise_err(input_data, data_to_tbl, SQL_obj, table_tokens):
+	conn = table_tokens
+	#create table + insert data
+	for tokens_int in data_to_tbl:
+		SQL_obj.insert_data_token_table(conn=conn, 
+			tokens_int=tokens_int, seted_temperature=False)
+	# unzip input_data
+	tokens_int, temperature_int, row = input_data
+	#call method
+	with pytest.raises(Exception):
+		from_method = SQL_obj.update_data_tokens(conn=conn, 
+			tokens_int=tokens_int, temperature_int=temperature_int, row=row)
+	
+# update temperature
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([(0,0,0,0,100), True], [(1,2,3,4,5), (20,30,40,50,60)], [(1,0,0,0,0,100),(2,20,30,40,50,60)]),
+	([(200,300,40,0,100), False], [(1,2,3,4,5), (20,30,40,50,60)], [(1,1,2,3,4,5),(2,200,300,40,0,100)]),
+	))
+def test_update_data_in_temperature(input_data, data_to_tbl, expected, SQL_obj, table_temperature):
+	#crete connection variable
+	conn = table_temperature
+	#create table + insert data
+	for tuple_int in data_to_tbl:		
+		SQL_obj.insert_data_to_temperature(conn=conn, tuple_int=tuple_int)
+	# unzip input_data
+	temp_or_humidity, temperature = input_data
+	#call method	
+	from_method = SQL_obj.update_data_in_temperature(conn=conn, 
+		temp_or_humidity=temp_or_humidity, temperature=temperature)
+	#fetch data afret we called method
+	fetched_data = SQL_obj.fetch_all_data_from_temp(conn=conn)
+	#compare fetched result with expected value 
+	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([(1,2,3,4,5,6), False], [(20,20,20,20,26), (50,50,50,50,55)]),
+	([(1,2,3,4,5), (10,20,30,40,50)], [(20,20,20,20,26), (50,50,50,50,55)]),
+	([True, False], [(20,20,20,20,26), (50,50,50,50,55)]),
+	))
+def test_update_data_in_temperature_raise_err(input_data, data_to_tbl, SQL_obj, table_temperature):
+	#create conn varialbe
+	conn = table_temperature
+	#create table + insert data
+	for tuple_int in data_to_tbl:
+		SQL_obj.insert_data_to_temperature(conn=conn, tuple_int=tuple_int)	
+	#unpack arg
+	temp_or_humidity, temperature = input_data
+	with pytest.raises(Exception):
+		#call method
+		from_method = SQL_obj.update_data_in_temperature(conn=conn, 
+			temp_or_humidity=temp_or_humidity, temperature=temperature )
+
+@pytest.mark.parametrize('input_data, data_to_tbl, expected', (
+	([('00:00', '01:00'), 1], [('10:00','20:30'), ('09:23','23:09')], ('00:00', '01:00')),
+	([('00:00', '01:00'), 2], [('10:00','20:30'), ('09:23','23:09')], ('00:00', '01:00')),
+	))
+def test_update_data_in_sockets_table(input_data, data_to_tbl, expected, SQL_obj, table_sockets):
+	conn = table_sockets
+	#crate tbl + insert data
+	for times in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+	#unzip input_data
+	times, row = input_data
+	#call method
+	from_method = SQL_obj.update_data_in_sockets_table(conn=conn, times=times, row=row)
+	#fetch changed data after called method
+	fetched_data = SQL_obj.fetch_all_data_from_sockets(conn=conn, row=row)
+	# make assertion
+	assert fetched_data == expected
+
+@pytest.mark.parametrize('input_data, data_to_tbl', (
+	([('00:as', '01:00'), 1], [('10:00','20:30'), ('09:23','23:09')]),
+	))
+def test_update_data_in_sockets_table_raise_err(input_data, data_to_tbl, SQL_obj, table_sockets):
+	conn = table_sockets
+	#crate tbl + insert data
+	for times in data_to_tbl:
+		SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+	#unzip input_data
+	times, row = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.update_data_in_sockets_table(conn=conn, times=times, row=row)
+	
+	
 
 
 ## SQL
 	## tbl temperature_humidity
 
 
-@pytest.mark.parametrize('expected',(
-	(dict),
-	(room_names),
-	))
-def test_fetched_data(expected, SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
-	if expected == dict:
-		assert type(data) == dict
-	else:
-		data = list(data.keys())                                                                                                                                                                                                                                                                                                                                                                                                                       
-		assert expected == data
+# @pytest.mark.parametrize('expected',(
+# 	(dict),
+# 	(room_names),
+# 	))
+# def test_fetched_data(expected, SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
+# 	if expected == dict:
+# 		assert type(data) == dict
+# 	else:
+# 		data = list(data.keys())                                                                                                                                                                                                                                                                                                                                                                                                                       
+# 		assert expected == data
 
-def test_initial_fetched_data(SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp()	
-	assert data
-
-
-def test_return_list(SQL_obj):	
-	data = SQL_obj.fetch_all_data_from_temp()
-	assert type(data) == list
+# def test_initial_fetched_data(SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp()	
+# 	assert data
 
 
-def test_room_names_are_correct(SQL_obj):	
-	fetched_list_with_tuples = SQL_obj.fetch_all_data_from_temp()	
-	temps, humidity, _ =  [tup[1:] for tup in fetched_list_with_tuples]
-	list_with_temps_and_humidity = [{'temp':temp, 'humidity': hum} 
-									for temp, hum in zip(temps, humidity)]
-	ans = dict(zip(room_names, list_with_temps_and_humidity))
-	assert ans == SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
-
-def test_fetch_all_data_from_temp_return_choosen_row(SQL_obj):
-	method = SQL_obj.fetch_all_data_from_temp(row=3)
-	expected = tuple(SQL_obj.names_and_pins_default.values())
-	assert method == expected
+# def test_return_list(SQL_obj):	
+# 	data = SQL_obj.fetch_all_data_from_temp()
+# 	assert type(data) == list
 
 
-def test_initials_tbl_in_db_method(SQL_obj):	
-	expected = 3
-	fetched_data = SQL_obj.fetch_all_data_from_temp()
-	assert expected == len(fetched_data)
-	## other TBL
+# def test_room_names_are_correct(SQL_obj):	
+# 	fetched_list_with_tuples = SQL_obj.fetch_all_data_from_temp()	
+# 	temps, humidity, _ =  [tup[1:] for tup in fetched_list_with_tuples]
+# 	list_with_temps_and_humidity = [{'temp':temp, 'humidity': hum} 
+# 									for temp, hum in zip(temps, humidity)]
+# 	ans = dict(zip(room_names, list_with_temps_and_humidity))
+# 	assert ans == SQL_obj.fetch_all_data_from_temp(temperature_dict=True)
 
-def test_names_and_pins_output_data_is_dict(SQL_obj):
-	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
-	expected = dict
-	assert expected == type(from_method)
-
-def test_names_and_pins_correct_output_data(SQL_obj):
-	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
-	expected = SQL_obj.names_and_pins_default
-	assert expected == from_method
+# def test_fetch_all_data_from_temp_return_choosen_row(SQL_obj):
+# 	method = SQL_obj.fetch_all_data_from_temp(row=3)
+# 	expected = tuple(SQL_obj.names_and_pins_default.values())
+# 	assert method == expected
 
 
-##CSV
-@pytest.mark.parametrize('time_examples',(
-	(['23-10-2019,08:00', '24-10-2019,10:00', '25-10-2019,14:00']),
-	(['30-10-2019,01:00', '31-10-2019,22:00', '31-10-2019,11:00']),
-	))	
-def test_saved_data_to_csv_main_file(csv_in_class, backend, time_examples):
-# create and save data to file 	
-	triggers = csv_in_class.TRIGGER_HOURS
-	for full_time in time_examples:
-		csv_in_class.save_temp_to_csv_handler(path=test_path, full_time=full_time)
-		f = backend.save_to_file()
-		_, expected = save_to_file.CSV_Class(
-				backend_file=f).read_csv(close_file=True)			
-	else:
-		f = backend.save_to_file()
-	_, rows = save_to_file.CSV_Class(
-		backend_file=f).read_csv(close_file=True)
-	assert expected == rows
+# def test_initials_tbl_in_db_method(SQL_obj):	
+# 	expected = 3
+# 	fetched_data = SQL_obj.fetch_all_data_from_temp()
+# 	assert expected == len(fetched_data)
+# 	## other TBL
+
+# def test_names_and_pins_output_data_is_dict(SQL_obj):
+# 	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
+# 	expected = dict
+# 	assert expected == type(from_method)
+
+# def test_names_and_pins_correct_output_data(SQL_obj):
+# 	from_method = SQL_obj.fetch_all_data_from_temp(pin_dict=True)
+# 	expected = SQL_obj.names_and_pins_default
+# 	assert expected == from_method
+
+
+#CSV
+# @pytest.mark.parametrize('time_examples',(
+# 	(['23-10-2019,08:00', '24-10-2019,10:00', '25-10-2019,14:00']),
+# 	(['30-10-2019,01:00', '31-10-2019,22:00', '31-10-2019,11:00']),
+# 	))	
+# def test_saved_data_to_csv_main_file(csv_in_class, backend, time_examples):
+# # create and save data to file 	
+# 	triggers = csv_in_class.TRIGGER_HOURS
+# 	for full_time in time_examples:
+# 		csv_in_class.save_temp_to_csv_handler(path=test_path, full_time=full_time)
+# 		f = backend.save_to_file()
+# 		_, expected = save_to_file.CSV_Class(
+# 				backend_file=f).read_csv(close_file=True)			
+# 	else:
+# 		f = backend.save_to_file()
+# 	_, rows = save_to_file.CSV_Class(
+# 		backend_file=f).read_csv(close_file=True)
+# 	assert expected == rows
 
 
 def test_save_data_to_csv_main_file_correct_data_last_row(csv_in_class, pure_csv, backend):
@@ -433,7 +784,7 @@ def test_all_sensors_in_row(SQL_obj, simpleyTestingCls):
 
 ##### FLASK HOME (Main file)
 
-# temperature backgound
+#temperature backgound
 @pytest.mark.parametrize('input_data', (
 	({'salon':{'temp':34,'humidity':60}, 
 		'WC': {'temp':24,'humidity':29},
@@ -500,9 +851,9 @@ def test_set_time():
 # create container
 
 @pytest.mark.parametrize('input_data, expected', (
-	((r'/home/pi/Desktop/env/fl/src/logic_script', False), ValueError),
-	((r'/home/pi/Desktop/env/fl/src/logic_script/test.txt', False), 'container was created!!'),
-	((r'/home/pi/Desktop/env/fl/src/logic_script/test.txt', True), 'container exist!!'),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script', False), ValueError),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt', False), 'container was created!!'),
+	((r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt', True), 'container exist!!'),
 	))
 def test_create_container(input_data, expected,  handler_file_obj):
 	path, bool_val = input_data
@@ -520,7 +871,7 @@ def test_create_container(input_data, expected,  handler_file_obj):
 # save to json
 
 def test_save_to_json(handler_file_obj):
-	path = r'/home/pi/Desktop/env/fl/src/logic_script/test.txt'
+	path = r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.txt'
 	content = {'somthing': 'lol'}
 	from_method = handler_file_obj.save_to_json(path=path, content=content)
 	assert from_method
@@ -543,14 +894,14 @@ def test_load_from_json(input_key, test_json_file, handler_file_obj):
 
 
 @pytest.mark.parametrize('input_data, content', (
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', None], ''),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', None], ''),
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		{'salon':1, 'wc':2}),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'salon'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'salon'],
 		'common string'),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		'{"blaca"}'),
-	([r'/home/pi/Desktop/env/fl/src/logic_script/test.json', 'blabla'],
+	([r'/home/pi/Desktop/env/fl/homeControl/logic_script/test.json', 'blabla'],
 		'{blaca}'),
 	))
 def test_load_from_json_raise_err(input_data, content, handler_file_obj):
@@ -566,8 +917,8 @@ def test_load_from_json_raise_err(input_data, content, handler_file_obj):
 
 # update file
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src',{'salon': 12, 'maly_pokoj':123, 'WC': 900},'WC','changed value', None]),
-	(['/home/pi/Desktop/env/fl/src',{'salon': 12, 'maly_pokoj':123, 'WC': {'temp': 20, 'humidity': 99}},'WC','changed value', 'temp']),
+	(['/home/pi/Desktop/env/fl/homeControl',{'salon': 12, 'maly_pokoj':123, 'WC': 900},'WC','changed value', None]),
+	(['/home/pi/Desktop/env/fl/homeControl',{'salon': 12, 'maly_pokoj':123, 'WC': {'temp': 20, 'humidity': 99}},'WC','changed value', 'temp']),
 	))
 def test_update_file(input_data, handler_file_obj, handler_file_not_called):
 	path, mocked_content, key, swap_content, key2 = input_data
@@ -600,7 +951,7 @@ def test_update_file_raise_err(input_data, handler_file_obj, handler_file_not_ca
 # delete data from file
 
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src', 'salon', {'salon':23, 'WC':34, 'outside': -1}]),
+	(['/home/pi/Desktop/env/fl/homeControl', 'salon', {'salon':23, 'WC':34, 'outside': -1}]),
 	))
 def test_delete_data_from_file(input_data, handler_file_not_called, handler_file_obj):
 	path, key, fake_content = input_data		
@@ -615,7 +966,7 @@ def test_delete_data_from_file(input_data, handler_file_not_called, handler_file
 
 
 @pytest.mark.parametrize('input_data', (
-	(['/home/pi/Desktop/env/fl/src', 'fakeKey', {'salon':23, 'WC':34, 'outside': -1}]),
+	(['/home/pi/Desktop/env/fl/homeControl', 'fakeKey', {'salon':23, 'WC':34, 'outside': -1}]),
 	(['/fake/directory', 'WC', {'salon':23, 'WC':34, 'outside': -1}]),
 	))
 def test_delete_data_raise_err(input_data, handler_file_not_called, handler_file_obj):
@@ -650,22 +1001,169 @@ def test_search_key_raise_err(input_data, handler_file_obj):
 		from_method = handler_file_obj.recur_search_key(d=d_content, s_key=key)
 	
 
-##### HandlerSQL class
 
 
+# recognizon table exists
+@pytest.mark.parametrize('input_data', (
+	(True),
+	(False),
+	))
+def test_recognize_exists_table(input_data, cursor, table_temperature_cursor, SQL_obj):	
+	if input_data:
+		table_name = 'sockets'
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
+		assert from_method == True
+	else:
+		table_name = 'temperature_humidity'
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=table_temperature_cursor, table_name=table_name)
+		assert from_method == False
 
-# create artificial data_base
-@pytest.fixture(name='create_and_destroy_db')
-def create_data_base():
-	pass
 
-# initial database
+@pytest.mark.parametrize('input_data', (
+	([23, 'somthing']),
+	([sqlite3.Cursor, 412])
+	))
+def test_recognize_existance_table_raise_err(input_data, SQL_obj):
+	cursor, table_name = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.recognize_if_table_in_db_exist(cursor=cursor, table_name=table_name)
 
-def test_initial_table_in_db():
-	pass
+# fetch columns names
+
+def test_fetch_column_names(table_temperature, SQL_obj):
+	cursor = table_temperature
+	table_name = 'temperature_humidity'
+	from_method = SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)
+	expected = ['id','salon', 'maly_pokoj', 'kuchnia','WC', 'outside']
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(['somestring', ['abcd'], False]),
+	([sqlite3.Cursor, ['abcd'], False]),
+	([sqlite3.Cursor, 'some_table', False]),
+	(['somthing', 'some_table', True]),
+	(['somthing', '', True]),
+	))
+def test_fetch_column_names_raise_err(input_data, table_sockets, SQL_obj):
+	cursor, table_name, flag = input_data
+	with pytest.raises(Exception):
+		if flag:
+			SQL_obj.fetch_column_names(cursor=table_sockets, table_name=table_name)
+		else:
+			SQL_obj.fetch_column_names(cursor=cursor, table_name=table_name)	
+	
+
+# create table
+def test_create_table(cursor, SQL_obj):	
+	table_sheet = SQL_obj.table_errors_tokens_and_seted_temperature()
+	from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
+	assert from_method
+
+def test_table_sheets(cursor, SQL_obj):
+	tables = {SQL_obj.table_errors_tokens_and_seted_temperature: ['id', 'salon', 'maly_pokoj', 'kuchnia', 'WC', 'outside'],
+				SQL_obj.table_temperature: ['id', 'salon', 'maly_pokoj', 'kuchnia', 'WC', 'outside'],
+				SQL_obj.table_sockets: ['id','turn_on', 'turn_off'],
+				}
+	for key, expected in tables.items():
+		table_sheet = key()			
+		from_method = SQL_obj.create_table(cursor=cursor, table_sheet=table_sheet)		
+		assert SQL_obj.fetch_column_names(cursor=cursor, table_name=table_sheet[0]) == expected
+
+
+### insert data to table
+# insert temp value to table
+def test_insert_data_to_temperature(table_temperature, SQL_obj):	
+	tuple_int = tuple(range(1,6))
+	# last row id 
+	expected = 1
+	from_method = SQL_obj.insert_data_to_temperature(conn=table_temperature, tuple_int=tuple_int)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(list(range(1,6))),
+	(tuple(range(1,10))),
+	))
+def test_insert_data_to_temperature_raise_err(input_data, table_temperature, SQL_obj):
+	with pytest.raises(Exception):
+		from_method = SQL_obj.insert_data_to_temperature(conn=table_temperature, tuple_int=input_data)
+
+# insert sockets value to table
+
+@pytest.mark.parametrize('input_data, expected', (
+	(('00:29','12:00'),1),
+	(('23:29','12:00'),1),
+	))
+def test_insert_data_to_sockets_table(input_data, expected, table_sockets, SQL_obj):
+	from_method = SQL_obj.insert_data_to_sockets_table(conn=table_sockets, times=input_data)
+	assert from_method == expected
+
+
+@pytest.mark.parametrize('input_data', (
+	(['not_conn_obj', ('23:29','12:00'), False]),
+	(['will_be_changed_to_obj', ['23:29','12:00'], True]),
+	(['will_be_changed_to_obj', ('23:290','12:00'), True]),
+	(['will_be_changed_to_obj', ('23:290','da12:00'), True]),
+	(['will_be_changed_to_obj', ('23:291d','112:00'), True]),
+	(['will_be_changed_to_obj', ('!@#23:290','2:00'), True]),
+	(['will_be_changed_to_obj', ('3:290','12:00'), True]),
+	(['will_be_changed_to_obj', ('93:29','12:00'), True]),
+	(['will_be_changed_to_obj', ('12:29','12:60'), True]),
+	))
+def test_insert_data_to_sockets_table_raise_err(input_data, table_sockets, SQL_obj):
+	conn, times, flag = input_data
+	with pytest.raises(Exception):
+		if flag:
+			conn = table_sockets
+			from_method = SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+		else:
+			from_method = SQL_obj.insert_data_to_sockets_table(conn=conn, times=times)
+
+# insert token to table
+@pytest.mark.parametrize('input_data, expected', (
+	([(23,20,21,19, 12), True], 1),
+	([(10,20,30,40,50), False], 1)	
+
+	))
+def test_insert_token_to_table(input_data, table_tokens, expected, SQL_obj):
+	tokens_int, seted_temperature = input_data
+	if seted_temperature:
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)
+		assert from_method == expected
+	else:
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=False)
+		assert from_method == expected
+
+@pytest.mark.parametrize('input_data', (
+	([(1,2,3,4), False]),
+	([[1,2,3,4], False]),
+	([[1,2,3,4,5], False]),
+	([123, False]),
+	(False, False),
+	(True, False),
+	(False, False),
+	([True, (10,20,30,40,50)]),	
+	))
+def test_insert_token_to_table_raise_err(input_data, table_tokens, SQL_obj):
+	tokens_int, seted_temperature = input_data
+	with pytest.raises(Exception):
+		from_method = SQL_obj.insert_data_token_table(conn=table_tokens, tokens_int=tokens_int, seted_temperature=seted_temperature)
+
+## update
+
+# update data in temperature
+# @pytest.mark.parametrize('input_data', (
+# 	([(10,20,30,40,50), True]),
+# 	))
+# def test_update_data_in_temp(input_data, SQL_obj):
+# 	temp_or_humidity, temperature= input_data
+# 	from_method = SQL_obj.update_data_in_temperature(temp_or_humidity=temp_or_humidity, temperature=temperature)
+# 	pass
+
 
 
 	
-	
-	
 
+
+	
