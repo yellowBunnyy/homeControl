@@ -26,7 +26,7 @@ Turn on and off circuit AC 230V.
 ### Executing program
 
 ```
-python3 flask_home.py -> will be changed
+. start_app.sh
 ```
 
 ## Help
