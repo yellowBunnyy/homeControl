@@ -1,6 +1,10 @@
-import os, json, sys, datetime, csv, sqlite3, re
-os.chdir('/home/pi/Desktop/env/fl/homeControl')
-print(os.getcwd())
+import os
+import re
+import json
+import datetime
+import csv
+import sqlite3
+
 
 class MyExceptions(Exception):
 	def __init__(self, message, error):		
@@ -10,7 +14,6 @@ class MyExceptions(Exception):
 	def __str__(self):
 		return f'mgs = {self.message}, exceptionType = {self.error}'
 	
-
 
 class HandlerFile():
 	
@@ -125,18 +128,18 @@ class HandlerSQL(HandlerFile):
 		'''Here we initial conection to database and create
 		cursor object form connect object.'''
 		# create connection with db and create cursor
-		# db_file = self.STATIC_DB_ERRORS_PATH
-		# if not db_file:
-		# 	raise MyErrors('Please insert DataBase file path!!')
-		# else:
-		# 	self.db_file = db_file
-		# 	self.conn = sqlite3.connect(db_file, check_same_thread=False)
-		# 	self.c = self.conn.cursor()
-		# 	print('have connetction')
-		# 	# this var have reference to dict with key as table_name and value as
-		# 	# list with method from SQL_Handlet class
-		# 	self.initial_table_in_db()
-		pass
+		db_file = self.STATIC_DB_ERRORS_PATH
+		if not db_file:
+			raise MyExceptions('Please insert DataBase file path!!')
+		else:
+			self.db_file = db_file
+			self.conn = sqlite3.connect(db_file, check_same_thread=False)
+			self.c = self.conn.cursor()
+			print('have connetction')
+			# this var have reference to dict with key as table_name and value as
+			# list with method from SQL_Handlet class
+			self.initial_table_in_db()
+		
 
 	@staticmethod
 	def time_str_validation(str_time:str):
@@ -170,7 +173,7 @@ class HandlerSQL(HandlerFile):
 		if add_default_value:
 			# varible object represent list content			
 			for table_name, objects in SQL_dict.items():				
-				if self.recognize_if_table_in_db_exist(table_name=table_name):
+				if self.recognize_if_table_in_db_exist(table_name=table_name, cursor=self.c):
 					table_sheet, insert_data_method, default_values = objects
 					self.create_table(
 							table_sheet=table_sheet())		
@@ -392,7 +395,7 @@ class HandlerSQL(HandlerFile):
 		1 - temps,
 		2 - humidity
 		row must be > 0
-				'''
+				'''		
 		if type(row) == int and row <= 0:
 			raise MyExceptions(message=f'{row} <=0. Must be grater than 0', error=ValueError)
 		sql = '''SELECT * from temperature_humidity'''
@@ -422,6 +425,7 @@ class HandlerSQL(HandlerFile):
 		row: row number.
 		turn_on: return hour in str format if true
 		turn_off: return hour in str format if true'''
+		conn = self.conn
 		if row <= 0 or type(turn_on) != bool or type(turn_off) != bool:
 			raise MyExceptions(message=f'{row} <=0. Must be grater than 0' if row <= 0 else f'{turn_on} != bool' if type(turn_on) != bool else f'{turn_off} != bool', error=ValueError)
 		sql = '''SELECT * from sockets'''

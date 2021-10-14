@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, Response
-import json, os, datetime
-os.chdir('/home/pi/Desktop/env/fl/homeControl')
+import os
+import json
+from flask import Flask, render_template, request
+import datetime
 from logic_script import virtual_relay, save_to_file, dht_handler
 
 app = Flask(__name__)
@@ -9,18 +10,20 @@ TEMP_KEY = 'temps'
 save_to_file_obj = save_to_file.HandlerCsv()
 LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
 CSV_file_path = save_to_file_obj.STATIC_AGREGATE_TEMPERATURE
-dht_handler_obj = dht_handler.DHT_Handler(		
-		file_obj=save_to_file_obj)
+dht_handler_obj = dht_handler.DHT_Handler(file_obj=save_to_file_obj)
 SQL_obj = save_to_file_obj
 virtual_relay_obj = virtual_relay.Relays_class(obj=save_to_file_obj)
 
+
 class MyExceptions(Exception):
 	pass
+
 
 @app.route('/')
 def home():
 	name = '''it is my own project'''
 	return render_template('home.html', name=name)
+
 
 @app.route('/temp')
 def temp():
@@ -160,5 +163,3 @@ def update_tokens_in_db_file():
 
 if __name__ == '__main__':
 	app.run(debug=1)
-
-

@@ -1,19 +1,19 @@
-import time, sys, os, Adafruit_DHT as dht
-print(os.getcwd())
+import Adafruit_DHT as dht
 from logic_script import save_to_file
-from time import sleep
+
+
 ##################fast get to paths#########################
 obj_save_file = save_to_file.HandlerSQL()
 ############################################################
+
+
 class MyExceptions(Exception):
 	def __init__(self, type_error, mgs):
 		self.type_error = type_error
 		self.mgs = mgs
 
 
-
-class Container():	
-
+class Container():
 	def __init__(self, file_obj):		
 		self.file_obj = file_obj
 

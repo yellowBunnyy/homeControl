@@ -1,9 +1,13 @@
+import sys
+import json
+import datetime
 from logic_script import save_to_file
 from time import sleep
-import datetime, json, sys, RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
 save_to_file_obj = save_to_file.HandlerFile()
+
 
 class MyExceptions(Exception):
 	pass
@@ -47,7 +51,7 @@ class Dioda():
 				if count % 2 == 0:
 					self.set_pin_output(pin, 0)
 				else:
-					self.set_pin_output(pin,1)
+					self.set_pin_output(pin, 1)
 				sleep(2)
 			count += 1
 
@@ -60,7 +64,6 @@ class Dioda():
 		for name, pin in data.items():
 				print(f'{name}, {pin} --> signal {"low"}')			
 				self.set_pin_output(pin, 0)
-
 
 
 class TimeConvertet():
@@ -104,8 +107,7 @@ class Relays_class(Dioda, TimeConvertet):
 	'''DISCRIPTION:
 	'''
 
-	def __init__(self, obj=save_to_file_obj):
-		
+	def __init__(self, obj=save_to_file_obj):		
 		self.save_to_file = obj
 		self.LIGHTING_PATH = obj.STATIC_LIGHTING_PATH		
 
