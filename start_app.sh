@@ -1,3 +1,7 @@
 BACKEND_PATH="./backend/"
 DB_PATH="./db/"
+echo "$(apt-get install libffi-dev libssl-dev)"
+echo "$(sudo apt install python3-dev)"
+echo "$(sudo apt-get install -y python3 python3-pip)"
+echo "$(sudo pip3 install docker-compose)"
 echo "$(python3 "$BACKEND_PATH"flask_home.py)"
