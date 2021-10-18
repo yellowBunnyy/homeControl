@@ -12,7 +12,7 @@ services:
   ports:
    - 5000:5000
   volumes:
-   - ./homeControl/app:/app   
+   - .:/my_app   
   restart: always
 
  db:
