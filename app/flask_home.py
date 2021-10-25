@@ -1,11 +1,12 @@
 import os
 import json
 from flask import Flask, render_template, request
+import psycopg2
 import datetime
 # from logic_script import virtual_relay, save_to_file, dht_handler
 
 app = Flask(__name__)
-print(os.getcwd())
+# print(os.getcwd())
 # TEMP_KEY = 'temps'
 # save_to_file_obj = save_to_file.HandlerCsv()
 # LIGHTING_PATH = save_to_file_obj.STATIC_LIGHTING_PATH
@@ -28,6 +29,17 @@ class MyExceptions(Exception):
 def home():
 	name = '''it is my own project'''
 	return render_template('home.html', name=name)
+
+
+@app.route('/db')
+def db_connect():
+	conn = psycopg2.connect(database='test',
+							user='seba',
+							password='passwd',
+							host=os.environ.get('POSTGRES_URL', 'None'),
+							port='5432')
+	return 'CONNECTED TO DB'
+
 
 
 # @app.route('/temp')
